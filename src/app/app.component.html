@@ -1,0 +1,257 @@
+<nb-layout>
+  <nb-layout-header fixed class="top-shell">
+    <div class="top-left">
+      <button nbButton ghost status="info" size="small" class="icon-button">
+        <nb-icon icon="menu-2-outline"></nb-icon>
+      </button>
+      <div class="school-logo">ND</div>
+      <strong>Notre Dame</strong>
+    </div>
+    <div class="top-right">
+      <span class="offline-dot">Offline</span>
+      <button nbButton outline status="info" size="small" class="round-button">
+        <nb-icon icon="bell-outline"></nb-icon>
+      </button>
+      <button nbButton outline status="info" size="small" class="round-button">
+        <nb-icon icon="globe-2-outline"></nb-icon>
+      </button>
+      <button nbButton outline status="info" size="small" class="tenant-button">Notre Dame</button>
+      <div class="avatar">ND</div>
+    </div>
+  </nb-layout-header>
+
+  <nb-layout-column>
+    <div class="app-shell">
+      <aside class="side-nav">
+        <nav>
+          <ng-container *ngFor="let item of navItems">
+            <a [class.active]="item.active">
+              <nb-icon [icon]="item.icon"></nb-icon>
+              <span>{{ item.label }}</span>
+              <nb-icon *ngIf="item.hasChildren" icon="chevron-left-outline" class="chevron"></nb-icon>
+            </a>
+            <div *ngIf="item.label === 'Dashboard'" class="nav-group dashboard-subnav">
+              <a class="sub-link active-sub">Overview</a>
+              <a class="sub-link">Work Queue</a>
+              <a class="sub-link">Quota Health</a>
+              <a class="sub-link">Payments</a>
+            </div>
+          </ng-container>
+        </nav>
+        <div class="powered">Powered by <strong>Sokrates</strong></div>
+      </aside>
+
+      <main class="content">
+        <div class="page-bar">
+          <div class="breadcrumb">
+            <nb-icon icon="home-outline"></nb-icon>
+            <nb-icon icon="chevron-right-outline"></nb-icon>
+            <nb-icon icon="grid-outline"></nb-icon>
+            <span>Admission Dashboard</span>
+          </div>
+          <time>Friday, August 28, 2026</time>
+        </div>
+
+        <section class="panel controls-panel">
+          <header class="dashboard-heading">
+            <div>
+              <h1>Admission Dashboard</h1>
+              <p>Operational health, capacity, payment risk, and demand insight for PPDB teams</p>
+            </div>
+            <button nbButton status="success" size="small">
+              <nb-icon icon="download-outline"></nb-icon>
+              Export Summary
+            </button>
+          </header>
+
+          <div class="filter-row">
+            <nb-select placeholder="Academic year" [(selected)]="selectedYear" (selectedChange)="updateDashboard()">
+              <nb-option *ngFor="let year of academicYears" [value]="year">{{ year }}</nb-option>
+            </nb-select>
+            <nb-select placeholder="School location" [(selected)]="selectedCampus" (selectedChange)="updateDashboard()">
+              <nb-option *ngFor="let campus of campuses" [value]="campus">{{ campus }}</nb-option>
+            </nb-select>
+            <nb-select placeholder="School level" [(selected)]="selectedLevel" (selectedChange)="updateDashboard()">
+              <nb-option *ngFor="let level of schoolLevels" [value]="level">{{ level }}</nb-option>
+            </nb-select>
+            <nb-select placeholder="Batch" [(selected)]="selectedBatch" (selectedChange)="updateDashboard()">
+              <nb-option *ngFor="let batch of batches" [value]="batch">{{ batch }}</nb-option>
+            </nb-select>
+          </div>
+
+          <div class="metric-strip">
+            <div *ngFor="let kpi of kpis" [ngClass]="'metric metric-' + kpi.status">
+              <nb-icon [icon]="kpi.icon"></nb-icon>
+              <span>{{ kpi.label }}</span>
+              <strong>{{ kpi.value }}</strong>
+              <small>{{ kpi.change }}</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="insight-grid">
+          <div class="panel span-7">
+            <header>
+              <h2>Admission Funnel Overview</h2>
+              <p>Candidate progression, conversion, and average aging by status</p>
+            </header>
+            <div class="funnel">
+              <div class="funnel-row" *ngFor="let step of funnelSteps">
+                <div class="funnel-label">
+                  <strong>{{ step.label }}</strong>
+                  <small>{{ step.value }} candidates</small>
+                </div>
+                <div class="funnel-track">
+                  <div class="funnel-fill" [style.width.%]="step.conversion"></div>
+                  <span>{{ step.conversion }}%</span>
+                </div>
+                <div class="aging">{{ step.aging }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel span-5">
+            <header>
+              <h2>Admin Work Queue</h2>
+              <p>Prioritized actions from payment, forms, discounts, tests, and NIS generation</p>
+            </header>
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Queue</th>
+                  <th>Issue</th>
+                  <th>SLA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of workQueue">
+                  <td>
+                    <strong>{{ item.candidate }}</strong>
+                    <small>{{ item.level }} - {{ item.campus }}</small>
+                  </td>
+                  <td>{{ item.issue }}</td>
+                  <td><span class="status-pill" [ngClass]="item.priority.toLowerCase()">{{ item.age }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="insight-grid">
+          <div class="panel span-4">
+            <header>
+              <h2>Quota and Capacity Health</h2>
+              <p>Registered candidates versus accepted seat limits by year level</p>
+            </header>
+            <div class="quota-list">
+              <div class="quota-item" *ngFor="let item of quotaItems">
+                <div class="quota-top">
+                  <strong>{{ item.level }} - {{ item.campus }}</strong>
+                  <span [ngClass]="item.risk.toLowerCase().replace(' ', '-')">{{ item.risk }}</span>
+                </div>
+                <nb-progress-bar [value]="percent(item.registered, item.maxRegister)" size="tiny"></nb-progress-bar>
+                <small>Registered {{ item.registered }}/{{ item.maxRegister }} - Accepted {{ item.accepted }}/{{ item.maxAccepted }}</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel span-4">
+            <header>
+              <h2>Payment and Collection</h2>
+              <p>Expected cash-in, received payment, outstanding amount, and verification risk</p>
+            </header>
+            <div class="money-stack">
+              <div><span>Expected</span><strong>{{ formatCurrency(paymentSummary.expected) }}</strong></div>
+              <div><span>Received</span><strong>{{ formatCurrency(paymentSummary.received) }}</strong></div>
+              <div><span>Outstanding</span><strong>{{ formatCurrency(paymentSummary.outstanding) }}</strong></div>
+            </div>
+            <div class="payment-split">
+              <span [style.width.%]="paymentSplit.paid">Paid</span>
+              <span [style.width.%]="paymentSplit.partial">Partial</span>
+              <span [style.width.%]="paymentSplit.unpaid">Unpaid</span>
+            </div>
+            <div class="queue-list">
+              <div *ngFor="let item of paymentQueue">
+                <span>
+                  <strong>{{ item.type }}</strong>
+                  <small>{{ item.candidate }} - {{ item.due }}</small>
+                </span>
+                <b [ngClass]="item.status.toLowerCase().replace(' ', '-')">{{ formatPaymentAmount(item.amount) }}</b>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel span-4">
+            <header>
+              <h2>Test Readiness</h2>
+              <p>Schedule coverage, attendance, score completion, and result publication</p>
+            </header>
+            <div class="readiness-list">
+              <div class="readiness-item" *ngFor="let item of testReadiness">
+                <div>
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ item.value }} of {{ item.total }} candidates</small>
+                </div>
+                <span>{{ percent(item.value, item.total) }}%</span>
+                <nb-progress-bar [value]="percent(item.value, item.total)" size="tiny"></nb-progress-bar>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="insight-grid">
+          <div class="panel span-4">
+            <header>
+              <h2>Candidate Source and Demand</h2>
+              <p>Top origin schools and acquisition signal</p>
+            </header>
+            <div class="source-list">
+              <div *ngFor="let school of sourceSchools">
+                <span>{{ school.name }}</span>
+                <div><i [style.width.%]="(school.value / maxSourceValue()) * 100"></i></div>
+                <strong>{{ school.value }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel span-4">
+            <header>
+              <h2>Waiting List and Re-register</h2>
+              <p>Candidate movement risk across target batches</p>
+            </header>
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Level</th>
+                  <th>Target Batch</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of waitingList">
+                  <td><strong>{{ item.level }}</strong><small>{{ item.candidates }} candidates</small></td>
+                  <td>{{ item.batch }}</td>
+                  <td><span class="status-pill" [ngClass]="item.risk.toLowerCase().replace(' ', '-')">{{ item.risk }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel span-4">
+            <header>
+              <h2>Registration Form Data Quality</h2>
+              <p>Completeness and reliability indicators for candidate records</p>
+            </header>
+            <div class="quality-list">
+              <div *ngFor="let item of dataQuality">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}%</strong>
+                <nb-progress-bar [value]="item.value" size="tiny" status="success"></nb-progress-bar>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </nb-layout-column>
+</nb-layout>

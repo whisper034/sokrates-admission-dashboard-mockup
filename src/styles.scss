@@ -1,0 +1,32 @@
+@import '~@nebular/theme/styles/theming';
+@import '~@nebular/theme/styles/themes/default';
+@import '~@nebular/theme/styles/globals';
+
+$nb-themes: nb-register-theme((
+  font-family-primary: unquote('Open Sans, Arial, sans-serif'),
+  font-family-secondary: unquote('Open Sans, Arial, sans-serif'),
+  color-primary-500: #3366ff,
+  color-success-500: #00d68f,
+  color-warning-500: #ffaa00,
+  color-danger-500: #ff3d71,
+  layout-padding: 1.25rem,
+  card-border-radius: 0.5rem,
+  card-header-text-font-size: 0.95rem,
+), default, default);
+
+@include nb-install() {
+  @include nb-theme-global();
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Open Sans', Arial, sans-serif;
+  margin: 0;
+}
+
+button nb-icon {
+  margin-right: 0.35rem;
+}
