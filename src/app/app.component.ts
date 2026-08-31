@@ -169,8 +169,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   dataQuality: DataQualityItem[] = [];
   paymentSummary = { expected: 0, received: 0, outstanding: 0 };
   paymentSplit = { paid: 0, partial: 0, unpaid: 0 };
-  private demandMap?: L.Map;
-  private demandLayer?: L.LayerGroup;
+  private demandMap?: any;
+  private demandLayer?: any;
 
   private readonly baseRecords: DashboardRecord[] = [
     this.record('2026/2027', 'Simprug', 'Kindergarten', 'K2', 'Batch 1 - Early Bird', 120, 103, 88, 78, 66, 54, 43, 3, 140, 90, 68, 18, 6, 165000000, 42000000, 480000000, 315000000, 48, 37, 78, 69, 59, 52, 18, 91, ['TK Notre Dame Puri', 'Little Stars Preschool', 'Saint Mary Primary']),
