@@ -8,13 +8,17 @@
       <strong>Notre Dame</strong>
     </div>
     <div class="top-right">
-      <span class="offline-dot">Offline</span>
+      <span class="offline-dot">{{ t('offline') }}</span>
       <button nbButton outline status="info" size="small" class="round-button">
         <nb-icon icon="bell-outline"></nb-icon>
       </button>
-      <button nbButton outline status="info" size="small" class="round-button">
+      <button nbButton outline status="info" size="small" class="round-button lang-icon-button">
         <nb-icon icon="globe-2-outline"></nb-icon>
+        <span>{{ currentLanguageLabel() }}</span>
       </button>
+      <nb-select class="language-select" size="small" [(selected)]="selectedLanguage" (selectedChange)="switchLanguage($event)">
+        <nb-option *ngFor="let language of languageOptions" [value]="language.value">{{ language.label }}</nb-option>
+      </nb-select>
       <button nbButton outline status="info" size="small" class="tenant-button">Notre Dame</button>
       <div class="avatar">ND</div>
     </div>
@@ -27,14 +31,14 @@
           <ng-container *ngFor="let item of navItems">
             <a [class.active]="item.active">
               <nb-icon [icon]="item.icon"></nb-icon>
-              <span>{{ item.label }}</span>
+              <span>{{ t(item.labelKey || item.label) }}</span>
               <nb-icon *ngIf="item.hasChildren" icon="chevron-left-outline" class="chevron"></nb-icon>
             </a>
             <div *ngIf="item.label === 'Dashboard'" class="nav-group dashboard-subnav">
-              <a class="sub-link active-sub">Overview</a>
-              <a class="sub-link">Work Queue</a>
-              <a class="sub-link">Quota Health</a>
-              <a class="sub-link">Payments</a>
+              <a class="sub-link active-sub">{{ t('overview') }}</a>
+              <a class="sub-link">{{ t('workQueue') }}</a>
+              <a class="sub-link">{{ t('quotaHealth') }}</a>
+              <a class="sub-link">{{ t('payments') }}</a>
             </div>
           </ng-container>
         </nav>
@@ -47,7 +51,7 @@
             <nb-icon icon="home-outline"></nb-icon>
             <nb-icon icon="chevron-right-outline"></nb-icon>
             <nb-icon icon="grid-outline"></nb-icon>
-            <span>Admission Dashboard</span>
+            <span>{{ t('admissionDashboard') }}</span>
           </div>
           <time>Friday, August 28, 2026</time>
         </div>
@@ -55,20 +59,20 @@
         <section class="panel controls-panel">
           <header class="dashboard-heading">
             <div>
-              <h1>Admission Dashboard</h1>
-              <p>Daily admission overview</p>
+              <h1>{{ t('admissionDashboard') }}</h1>
+              <p>{{ t('dailyAdmissionOverview') }}</p>
             </div>
             <button nbButton status="success" size="small">
               <nb-icon icon="download-outline"></nb-icon>
-              Export Summary
+              {{ t('exportSummary') }}
             </button>
           </header>
 
           <div class="filter-row">
-            <nb-select placeholder="Academic year" [(selected)]="selectedYear" (selectedChange)="updateDashboard()">
-              <nb-option *ngFor="let year of academicYears" [value]="year">{{ year }}</nb-option>
+            <nb-select [placeholder]="t('academicYear')" [(selected)]="selectedYear" (selectedChange)="updateDashboard()">
+              <nb-option *ngFor="let year of academicYears" [value]="year">{{ academicYearLabel(year) }}</nb-option>
             </nb-select>
-            <span class="filter-note">Showing {{ selectedYear }}</span>
+            <span class="filter-note">{{ t('showing') }} {{ academicYearLabel(selectedYear) }}</span>
           </div>
 
           <div class="metric-strip">
@@ -85,19 +89,19 @@
           <div class="panel span-7">
             <header class="panel-header">
               <div>
-                <h2>Admission Funnel Overview</h2>
-                <p>Pipeline health</p>
+                <h2>{{ t('admissionFunnelOverview') }}</h2>
+                <p>{{ t('pipelineHealth') }}</p>
               </div>
               <div class="segmented-toggle" aria-label="Funnel view">
-                <button type="button" [class.active]="funnelMode === 'all'" (click)="setFunnelMode('all')">All Schools</button>
-                <button type="button" [class.active]="funnelMode === 'school'" (click)="setFunnelMode('school')">Per School</button>
+                <button type="button" [class.active]="funnelMode === 'all'" (click)="setFunnelMode('all')">{{ t('allSchools') }}</button>
+                <button type="button" [class.active]="funnelMode === 'school'" (click)="setFunnelMode('school')">{{ t('perSchool') }}</button>
               </div>
             </header>
             <div class="funnel" *ngIf="funnelMode === 'all'">
               <div class="funnel-row" *ngFor="let step of funnelSteps">
                 <div class="funnel-label">
                   <strong>{{ step.label }}</strong>
-                  <small>{{ step.value }} candidates</small>
+                  <small>{{ step.value }} {{ t('candidates') }}</small>
                 </div>
                 <div class="funnel-track">
                   <div class="funnel-fill" [style.width.%]="step.conversion"></div>
@@ -106,13 +110,13 @@
                 <div class="aging">{{ step.aging }}</div>
               </div>
             </div>
-            <div class="school-funnel-grid" *ngIf="funnelMode === 'school'">
+            <div class="school-funnel-scroll" *ngIf="funnelMode === 'school'">
               <article *ngFor="let school of schoolFunnels" class="school-funnel">
                 <div class="school-funnel-top">
                   <strong>{{ school.campus }}</strong>
                   <span>{{ school.conversion }}%</span>
                 </div>
-                <small>{{ formatNumber(school.registered) }} candidates - {{ formatNumber(school.needAction) }} tasks</small>
+                <small>{{ formatNumber(school.registered) }} {{ t('candidates') }} - {{ formatNumber(school.needAction) }} {{ t('tasks') }}</small>
                 <div class="mini-funnel" *ngFor="let step of school.steps">
                   <span>{{ step.label }}</span>
                   <div class="state-bar healthy">
@@ -126,22 +130,22 @@
 
           <div class="panel span-5">
             <header>
-              <h2>To-Do List</h2>
-              <p>Open admin tasks</p>
+              <h2>{{ t('toDoList') }}</h2>
+              <p>{{ t('openAdminTasks') }}</p>
             </header>
             <table class="modern-table">
               <thead>
                 <tr>
-                  <th>Task</th>
-                  <th>Student</th>
-                  <th>Age</th>
+                  <th>{{ t('task') }}</th>
+                  <th>{{ t('student') }}</th>
+                  <th>{{ t('age') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let item of workQueue">
                   <td>
                     <strong>{{ item.issue }}</strong>
-                    <small>{{ item.priority }} priority</small>
+                    <small>{{ t('priority') }}: {{ priorityLabel(item.priority) }}</small>
                   </td>
                   <td><span>{{ item.candidate }}</span><small>{{ item.level }} - {{ item.campus }}</small></td>
                   <td><span class="status-pill" [ngClass]="queueClass(item.priority)">{{ item.age }}</span></td>
@@ -154,37 +158,48 @@
         <section class="insight-grid">
           <div class="panel span-4">
             <header>
-              <h2>Quota and Capacity Health</h2>
-              <p>Seat usage</p>
+              <h2>{{ t('quotaTitle') }}</h2>
+              <p>{{ t('seatUsage') }}</p>
             </header>
+            <div class="legend-row">
+              <span class="legend-item healthy">{{ t('healthy') }}</span>
+              <span class="legend-item low-demand">{{ t('lowDemand') }}</span>
+              <span class="legend-item near-full">{{ t('nearFull') }}</span>
+              <span class="legend-item full">{{ t('full') }}</span>
+            </div>
             <div class="quota-list">
               <div class="quota-item" *ngFor="let item of quotaItems">
                 <div class="quota-top">
                   <strong>{{ item.level }} - {{ item.campus }}</strong>
-                  <span [ngClass]="riskClass(item.risk)">{{ item.risk }}</span>
+                  <span [ngClass]="riskClass(item.risk)">{{ riskLabel(item.risk) }}</span>
                 </div>
                 <div class="state-bar" [ngClass]="riskClass(item.risk)">
                   <i [style.width.%]="percent(item.registered, item.maxRegister)"></i>
                 </div>
-                <small>Registered {{ item.registered }}/{{ item.maxRegister }} - Accepted {{ item.accepted }}/{{ item.maxAccepted }}</small>
+                <small>{{ t('registeredShort') }} {{ item.registered }}/{{ item.maxRegister }} - {{ t('acceptedShort') }} {{ item.accepted }}/{{ item.maxAccepted }}</small>
               </div>
             </div>
           </div>
 
           <div class="panel span-4">
             <header>
-              <h2>Payment and Collection</h2>
-              <p>Collection status</p>
+              <h2>{{ t('paymentTitle') }}</h2>
+              <p>{{ t('collectionStatus') }}</p>
             </header>
             <div class="money-stack">
-              <div><span>Expected</span><strong>{{ formatCurrency(paymentSummary.expected) }}</strong></div>
-              <div><span>Received</span><strong>{{ formatCurrency(paymentSummary.received) }}</strong></div>
-              <div><span>Outstanding</span><strong>{{ formatCurrency(paymentSummary.outstanding) }}</strong></div>
+              <div><span>{{ t('expected') }}</span><strong>{{ formatCurrency(paymentSummary.expected) }}</strong></div>
+              <div><span>{{ t('received') }}</span><strong>{{ formatCurrency(paymentSummary.received) }}</strong></div>
+              <div><span>{{ t('outstanding') }}</span><strong>{{ formatCurrency(paymentSummary.outstanding) }}</strong></div>
             </div>
             <div class="payment-split">
-              <span [style.width.%]="paymentSplit.paid">Paid</span>
-              <span [style.width.%]="paymentSplit.partial">Partial</span>
-              <span [style.width.%]="paymentSplit.unpaid">Unpaid</span>
+              <span [style.width.%]="paymentSplit.paid" [attr.title]="t('paidLegend')"></span>
+              <span [style.width.%]="paymentSplit.partial" [attr.title]="t('partialLegend')"></span>
+              <span [style.width.%]="paymentSplit.unpaid" [attr.title]="t('unpaidLegend')"></span>
+            </div>
+            <div class="legend-row payment-legend">
+              <span class="legend-item paid">{{ t('paid') }}</span>
+              <span class="legend-item partial">{{ t('partial') }}</span>
+              <span class="legend-item unpaid">{{ t('unpaid') }}</span>
             </div>
             <div class="queue-list">
               <div *ngFor="let item of paymentQueue">
@@ -199,14 +214,19 @@
 
           <div class="panel span-4">
             <header>
-              <h2>Test Readiness</h2>
-              <p>Selection progress</p>
+              <h2>{{ t('readinessTitle') }}</h2>
+              <p>{{ t('selectionProgress') }}</p>
             </header>
+            <div class="legend-row">
+              <span class="legend-item healthy">{{ t('onTrack') }} >= 85%</span>
+              <span class="legend-item warning">{{ t('watch') }} 70-84%</span>
+              <span class="legend-item danger">{{ t('atRisk') }} &lt; 70%</span>
+            </div>
             <div class="readiness-list">
               <div class="readiness-item" *ngFor="let item of testReadiness">
                 <div>
                   <strong>{{ item.label }}</strong>
-                  <small>{{ item.value }} of {{ item.total }} candidates</small>
+                  <small>{{ item.value }} {{ t('of') }} {{ item.total }} {{ t('candidates') }}</small>
                 </div>
                 <span>{{ percent(item.value, item.total) }}%</span>
                 <div class="state-bar" [ngClass]="readinessClass(item)">
@@ -220,8 +240,8 @@
         <section class="insight-grid">
           <div class="panel span-4">
             <header>
-              <h2>Candidate Source and Demand</h2>
-              <p>Demand by region</p>
+              <h2>{{ t('sourceTitle') }}</h2>
+              <p>{{ t('demandByRegion') }}</p>
             </header>
             <div class="map-card">
               <svg class="world-map" viewBox="0 0 560 300" role="img" aria-label="Candidate demand map focused on Indonesia">
@@ -253,22 +273,22 @@
 
           <div class="panel span-4">
             <header>
-              <h2>Waiting List and Re-register</h2>
-              <p>Batch movement</p>
+              <h2>{{ t('waitingTitle') }}</h2>
+              <p>{{ t('batchMovement') }}</p>
             </header>
             <table class="modern-table">
               <thead>
                 <tr>
-                  <th>Level</th>
-                  <th>Batch</th>
-                  <th>Risk</th>
+                  <th>{{ t('level') }}</th>
+                  <th>{{ t('batch') }}</th>
+                  <th>{{ t('risk') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let item of waitingList">
-                  <td><strong>{{ item.level }}</strong><small>{{ item.candidates }} candidates</small></td>
+                  <td><strong>{{ item.level }}</strong><small>{{ item.candidates }} {{ t('candidates') }}</small></td>
                   <td>{{ item.batch }}</td>
-                  <td><span class="status-pill" [ngClass]="riskClass(item.risk)">{{ item.risk }}</span></td>
+                  <td><span class="status-pill" [ngClass]="riskClass(item.risk)">{{ riskLabel(item.risk) }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -276,8 +296,8 @@
 
           <div class="panel span-4">
             <header>
-              <h2>Registration Form Data Quality</h2>
-              <p>Record completeness</p>
+              <h2>{{ t('dataQualityTitle') }}</h2>
+              <p>{{ t('recordCompleteness') }}</p>
             </header>
             <div class="quality-list">
               <div *ngFor="let item of dataQuality">

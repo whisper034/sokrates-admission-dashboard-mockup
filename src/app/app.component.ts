@@ -4,8 +4,10 @@ type KpiStatus = 'success' | 'warning' | 'danger' | 'info' | 'primary';
 type RiskStatus = 'Full' | 'Near Full' | 'Healthy' | 'Low Demand';
 type PaymentStatus = 'Overdue' | 'Due Soon' | 'Verify' | 'Partial';
 type QueuePriority = 'High' | 'Medium' | 'Low';
+type Language = 'en' | 'id';
 
 interface KpiCard {
+  labelKey: string;
   label: string;
   value: string;
   change: string;
@@ -14,6 +16,7 @@ interface KpiCard {
 }
 
 interface FunnelStep {
+  key: string;
   label: string;
   value: number;
   conversion: number;
@@ -129,22 +132,27 @@ interface DashboardRecord {
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
-  academicYears = ['All academic years', '2026/2027', '2025/2026'];
-  selectedYear = 'All academic years';
+  academicYears = ['all', '2026/2027', '2025/2026'];
+  selectedYear = 'all';
   funnelMode: 'all' | 'school' = 'all';
+  selectedLanguage: Language = 'en';
+  languageOptions = [
+    { value: 'en' as Language, label: 'English', badge: 'en' },
+    { value: 'id' as Language, label: 'Indonesia', badge: 'id' },
+  ];
 
   navItems = [
-    { label: 'Dashboard', icon: 'grid-outline', active: true, hasChildren: true },
-    { label: 'Agreement', icon: 'file-text-outline' },
-    { label: 'Registration Form', icon: 'file-add-outline' },
-    { label: 'PPDB Registration', icon: 'people-outline' },
-    { label: 'Batch', icon: 'settings-2-outline' },
-    { label: 'Test', icon: 'briefcase-outline', hasChildren: true },
-    { label: 'Candidate', icon: 'people-outline' },
-    { label: 'Candidate Transfer', icon: 'swap-outline', hasChildren: true },
-    { label: 'Admission Fee Transaction', icon: 'percent-outline' },
-    { label: 'Discount', icon: 'percent-outline', hasChildren: true },
-    { label: 'Report', icon: 'file-text-outline', hasChildren: true },
+    { label: 'Dashboard', labelKey: 'dashboard', icon: 'grid-outline', active: true, hasChildren: true },
+    { label: 'Agreement', labelKey: 'agreement', icon: 'file-text-outline' },
+    { label: 'Registration Form', labelKey: 'registrationForm', icon: 'file-add-outline' },
+    { label: 'PPDB Registration', labelKey: 'ppdbRegistration', icon: 'people-outline' },
+    { label: 'Batch', labelKey: 'batch', icon: 'settings-2-outline' },
+    { label: 'Test', labelKey: 'test', icon: 'briefcase-outline', hasChildren: true },
+    { label: 'Candidate', labelKey: 'candidate', icon: 'people-outline' },
+    { label: 'Candidate Transfer', labelKey: 'candidateTransfer', icon: 'swap-outline', hasChildren: true },
+    { label: 'Admission Fee Transaction', labelKey: 'admissionFeeTransaction', icon: 'percent-outline' },
+    { label: 'Discount', labelKey: 'discount', icon: 'percent-outline', hasChildren: true },
+    { label: 'Report', labelKey: 'report', icon: 'file-text-outline', hasChildren: true },
   ];
 
   kpis: KpiCard[] = [];
@@ -168,10 +176,221 @@ export class AppComponent implements OnInit {
     this.record('2026/2027', 'Simprug', 'Junior High', 'Grade 7', 'Batch 3 - Final', 96, 78, 61, 49, 38, 31, 24, 4, 160, 100, 52, 22, 7, 182000000, 50000000, 430000000, 248000000, 42, 30, 49, 41, 33, 29, 31, 76, ['Global Nusantara', 'Harapan Bangsa', 'BINUS School Simprug']),
     this.record('2026/2027', 'Serpong', 'Senior High', 'Grade 10', 'Batch 1 - Early Bird', 142, 122, 104, 91, 77, 64, 53, 5, 180, 120, 91, 19, 7, 205000000, 44000000, 610000000, 405000000, 58, 41, 91, 76, 64, 58, 16, 90, ['BINUS School Simprug', 'Global Nusantara', 'Harapan Bangsa']),
     this.record('2026/2027', 'Bekasi', 'Playgroup', 'Playgroup', 'Batch 1 - Early Bird', 72, 60, 48, 39, 31, 24, 20, 2, 110, 70, 39, 15, 5, 96000000, 21000000, 260000000, 164000000, 24, 18, 39, 31, 24, 20, 9, 82, ['Little Stars Preschool', 'TK Notre Dame Puri', 'Saint Mary Primary']),
+    this.record('2026/2027', 'Puri', 'Elementary', 'Grade 2', 'Batch 2 - Regular', 138, 119, 98, 82, 67, 56, 45, 4, 175, 115, 72, 21, 6, 176000000, 37000000, 560000000, 384000000, 49, 36, 82, 68, 57, 50, 14, 86, ['TK Notre Dame Puri', 'Global Nusantara', 'Little Stars Preschool']),
+    this.record('2026/2027', 'Cibubur', 'Junior High', 'Grade 8', 'Batch 3 - Final', 84, 68, 52, 43, 34, 27, 21, 3, 145, 95, 43, 17, 5, 132000000, 39000000, 350000000, 218000000, 34, 27, 43, 34, 28, 23, 20, 78, ['Harapan Bangsa', 'Saint Mary Primary', 'Global Nusantara']),
     this.record('2025/2026', 'Simprug', 'Elementary', 'Grade 1', 'Batch 1 - Early Bird', 188, 164, 145, 124, 105, 91, 82, 6, 210, 140, 118, 20, 5, 198000000, 32000000, 780000000, 582000000, 54, 33, 124, 112, 96, 89, 12, 93, ['TK Notre Dame Puri', 'Little Stars Preschool', 'BINUS School Simprug']),
     this.record('2025/2026', 'Serpong', 'Junior High', 'Grade 7', 'Batch 2 - Regular', 133, 112, 94, 79, 65, 50, 43, 8, 170, 110, 80, 27, 11, 245000000, 69000000, 540000000, 295000000, 61, 44, 79, 65, 53, 47, 22, 79, ['Harapan Bangsa', 'Global Nusantara', 'Saint Mary Primary']),
     this.record('2025/2026', 'Bekasi', 'Senior High', 'Grade 10', 'Batch 3 - Final', 98, 80, 64, 55, 44, 34, 27, 5, 150, 95, 51, 21, 8, 176000000, 58000000, 410000000, 234000000, 43, 29, 55, 44, 37, 31, 19, 81, ['Global Nusantara', 'Harapan Bangsa', 'BINUS School Simprug']),
+    this.record('2025/2026', 'Alam Sutera', 'Kindergarten', 'K1', 'Batch 2 - Regular', 108, 91, 74, 61, 48, 39, 31, 4, 150, 100, 58, 16, 4, 124000000, 28000000, 420000000, 296000000, 36, 26, 61, 51, 42, 36, 13, 87, ['Little Stars Preschool', 'TK Notre Dame Puri', 'Harapan Bangsa']),
+    this.record('2025/2026', 'Kelapa Gading', 'Elementary', 'Grade 3', 'Batch 1 - Early Bird', 126, 107, 88, 74, 59, 48, 38, 4, 165, 110, 67, 18, 5, 146000000, 31000000, 500000000, 354000000, 42, 31, 74, 62, 50, 43, 15, 85, ['Saint Mary Primary', 'Global Nusantara', 'Little Stars Preschool']),
   ];
+
+  private readonly translations: Record<Language, Record<string, string>> = {
+    en: {
+      dashboard: 'Dashboard',
+      overview: 'Overview',
+      workQueue: 'Work Queue',
+      quotaHealth: 'Quota Health',
+      payments: 'Payments',
+      agreement: 'Agreement',
+      registrationForm: 'Registration Form',
+      ppdbRegistration: 'PPDB Registration',
+      batch: 'Batch',
+      test: 'Test',
+      candidate: 'Candidate',
+      candidateTransfer: 'Candidate Transfer',
+      admissionFeeTransaction: 'Admission Fee Transaction',
+      discount: 'Discount',
+      report: 'Report',
+      offline: 'Offline',
+      admissionDashboard: 'Admission Dashboard',
+      dailyAdmissionOverview: 'Daily admission overview',
+      admissionFunnelOverview: 'Admission Funnel Overview',
+      exportSummary: 'Export Summary',
+      showing: 'Showing',
+      academicYear: 'Academic year',
+      activeCandidates: 'Active Candidates',
+      needActionToday: 'Need Action Today',
+      admissionConversion: 'Admission Conversion',
+      outstandingPayment: 'Outstanding Payment',
+      vsLastPeriod: 'vs last period',
+      highPriority: 'high priority',
+      ptsThisMonth: 'pts this month',
+      overdue: 'overdue',
+      registered: 'Registered',
+      formComplete: 'Form Complete',
+      registrationPaid: 'Reg. Payment Paid',
+      testScheduled: 'Test Scheduled',
+      passedOrWaitingList: 'Passed / WL',
+      finalPayment: 'Final Payment',
+      completed: 'Completed',
+      scheduled: 'Scheduled',
+      present: 'Present',
+      scoresComplete: 'Scores Complete',
+      resultsPublished: 'Results Published',
+      allAcademicYears: 'All academic years',
+      pipelineHealth: 'Pipeline health',
+      allSchools: 'All Schools',
+      perSchool: 'Per School',
+      candidates: 'candidates',
+      tasks: 'tasks',
+      toDoList: 'To-Do List',
+      openAdminTasks: 'Open admin tasks',
+      task: 'Task',
+      student: 'Student',
+      age: 'Age',
+      priority: 'priority',
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low',
+      finalPaymentProof: 'Final payment proof waiting verification',
+      missingParentPhone: 'Registration form missing parent phone',
+      discountApproval: 'Discount approval pending',
+      testResultNotPublished: 'Test result not published',
+      emailVerification: 'Email verification resend needed',
+      registrationFee: 'Registration Fee',
+      parentContact: 'Complete parent contact',
+      filesUploaded: 'Required files uploaded',
+      candidateEmail: 'Verified candidate email',
+      duplicateCheck: 'No duplicate indicators',
+      targetBatch: 'Target Batch',
+      quotaTitle: 'Quota and Capacity Health',
+      seatUsage: 'Seat usage',
+      full: 'Full',
+      nearFull: 'Near Full',
+      healthy: 'Healthy',
+      lowDemand: 'Low Demand',
+      registeredShort: 'Registered',
+      acceptedShort: 'Accepted',
+      paymentTitle: 'Payment and Collection',
+      collectionStatus: 'Collection status',
+      expected: 'Expected',
+      received: 'Received',
+      outstanding: 'Outstanding',
+      paid: 'Paid',
+      partial: 'Partial',
+      unpaid: 'Unpaid',
+      paidLegend: 'Paid or received payment',
+      partialLegend: 'Partially paid',
+      unpaidLegend: 'Unpaid balance',
+      readinessTitle: 'Test Readiness',
+      selectionProgress: 'Selection progress',
+      onTrack: 'On track',
+      watch: 'Watch',
+      atRisk: 'At risk',
+      of: 'of',
+      sourceTitle: 'Candidate Source and Demand',
+      demandByRegion: 'Demand by region',
+      waitingTitle: 'Waiting List and Re-register',
+      batchMovement: 'Batch movement',
+      level: 'Level',
+      risk: 'Risk',
+      dataQualityTitle: 'Registration Form Data Quality',
+      recordCompleteness: 'Record completeness',
+    },
+    id: {
+      dashboard: 'Dashboard',
+      overview: 'Ikhtisar',
+      workQueue: 'Daftar Kerja',
+      quotaHealth: 'Kesehatan Kuota',
+      payments: 'Pembayaran',
+      agreement: 'Persetujuan',
+      registrationForm: 'Formulir Registrasi',
+      ppdbRegistration: 'Registrasi PPDB',
+      batch: 'Batch',
+      test: 'Tes',
+      candidate: 'Kandidat',
+      candidateTransfer: 'Transfer Kandidat',
+      admissionFeeTransaction: 'Transaksi Biaya Masuk',
+      discount: 'Diskon',
+      report: 'Laporan',
+      offline: 'Offline',
+      admissionDashboard: 'Dashboard Penerimaan',
+      dailyAdmissionOverview: 'Ikhtisar penerimaan harian',
+      admissionFunnelOverview: 'Ikhtisar Alur Penerimaan',
+      exportSummary: 'Ekspor Ringkasan',
+      showing: 'Menampilkan',
+      academicYear: 'Tahun akademik',
+      activeCandidates: 'Kandidat Aktif',
+      needActionToday: 'Perlu Ditindaklanjuti',
+      admissionConversion: 'Konversi Penerimaan',
+      outstandingPayment: 'Pembayaran Belum Lunas',
+      vsLastPeriod: 'dibanding periode lalu',
+      highPriority: 'prioritas tinggi',
+      ptsThisMonth: 'poin bulan ini',
+      overdue: 'terlambat',
+      registered: 'Terdaftar',
+      formComplete: 'Form Lengkap',
+      registrationPaid: 'Pembayaran Registrasi',
+      testScheduled: 'Jadwal Tes',
+      passedOrWaitingList: 'Lulus / Waiting List',
+      finalPayment: 'Pembayaran Akhir',
+      completed: 'Selesai',
+      scheduled: 'Terjadwal',
+      present: 'Hadir',
+      scoresComplete: 'Nilai Lengkap',
+      resultsPublished: 'Hasil Dipublikasikan',
+      allAcademicYears: 'Semua tahun akademik',
+      pipelineHealth: 'Kesehatan alur',
+      allSchools: 'Semua Sekolah',
+      perSchool: 'Per Sekolah',
+      candidates: 'kandidat',
+      tasks: 'tugas',
+      toDoList: 'Daftar Tugas',
+      openAdminTasks: 'Tugas admin terbuka',
+      task: 'Tugas',
+      student: 'Siswa',
+      age: 'Umur',
+      priority: 'prioritas',
+      high: 'Tinggi',
+      medium: 'Sedang',
+      low: 'Rendah',
+      finalPaymentProof: 'Bukti pembayaran akhir menunggu verifikasi',
+      missingParentPhone: 'Nomor telepon orang tua belum lengkap',
+      discountApproval: 'Persetujuan diskon tertunda',
+      testResultNotPublished: 'Hasil tes belum dipublikasikan',
+      emailVerification: 'Perlu kirim ulang verifikasi email',
+      registrationFee: 'Biaya Registrasi',
+      parentContact: 'Kontak orang tua lengkap',
+      filesUploaded: 'Berkas wajib terunggah',
+      candidateEmail: 'Email kandidat terverifikasi',
+      duplicateCheck: 'Tidak ada indikasi duplikat',
+      targetBatch: 'Batch Tujuan',
+      quotaTitle: 'Kesehatan Kuota dan Kapasitas',
+      seatUsage: 'Pemakaian kursi',
+      full: 'Penuh',
+      nearFull: 'Hampir Penuh',
+      healthy: 'Sehat',
+      lowDemand: 'Permintaan Rendah',
+      registeredShort: 'Terdaftar',
+      acceptedShort: 'Diterima',
+      paymentTitle: 'Pembayaran dan Penagihan',
+      collectionStatus: 'Status penagihan',
+      expected: 'Target',
+      received: 'Diterima',
+      outstanding: 'Belum Lunas',
+      paid: 'Lunas',
+      partial: 'Sebagian',
+      unpaid: 'Belum Lunas',
+      paidLegend: 'Pembayaran lunas atau diterima',
+      partialLegend: 'Pembayaran sebagian',
+      unpaidLegend: 'Sisa belum dibayar',
+      readinessTitle: 'Kesiapan Tes',
+      selectionProgress: 'Progres seleksi',
+      onTrack: 'Aman',
+      watch: 'Perlu dipantau',
+      atRisk: 'Berisiko',
+      of: 'dari',
+      sourceTitle: 'Sumber Kandidat dan Permintaan',
+      demandByRegion: 'Permintaan per wilayah',
+      waitingTitle: 'Waiting List dan Daftar Ulang',
+      batchMovement: 'Pergerakan batch',
+      level: 'Jenjang',
+      risk: 'Risiko',
+      dataQualityTitle: 'Kualitas Data Formulir Registrasi',
+      recordCompleteness: 'Kelengkapan data',
+    },
+  };
 
   ngOnInit(): void {
     this.updateDashboard();
@@ -182,36 +401,42 @@ export class AppComponent implements OnInit {
     const totals = this.sumRecords(records);
     const previousTotal = Math.round(totals.registered * this.previousPeriodFactor());
 
-    this.kpis = [
+    const kpis: KpiCard[] = [
       {
+        labelKey: 'activeCandidates',
         label: 'Active Candidates',
         value: this.formatNumber(totals.registered - totals.canceled),
-        change: this.formatDelta(totals.registered, previousTotal, 'vs last period'),
+        change: this.formatDelta(totals.registered, previousTotal, this.t('vsLastPeriod')),
         status: 'primary',
         icon: 'people-outline',
       },
       {
+        labelKey: 'needActionToday',
         label: 'Need Action Today',
         value: this.formatNumber(totals.needAction),
-        change: `${this.formatNumber(totals.highPriority)} high priority`,
+        change: `${this.formatNumber(totals.highPriority)} ${this.t('highPriority')}`,
         status: totals.highPriority > 20 ? 'danger' : 'warning',
         icon: 'alert-triangle-outline',
       },
       {
+        labelKey: 'admissionConversion',
         label: 'Admission Conversion',
         value: `${this.percent(totals.completed, totals.registered)}%`,
-        change: `${this.formatSigned(this.conversionLift())} pts this month`,
+        change: `${this.formatSigned(this.conversionLift())} ${this.t('ptsThisMonth')}`,
         status: 'success',
         icon: 'trending-up-outline',
       },
       {
+        labelKey: 'outstandingPayment',
         label: 'Outstanding Payment',
         value: this.formatCurrency(totals.outstanding),
-        change: `${this.formatCurrency(totals.overdue)} overdue`,
+        change: `${this.formatCurrency(totals.overdue)} ${this.t('overdue')}`,
         status: totals.overdue > 75000000 ? 'warning' : 'success',
         icon: 'credit-card-outline',
       },
     ];
+
+    this.kpis = kpis.map(kpi => ({ ...kpi, label: this.t(kpi.labelKey) }));
 
     this.funnelSteps = this.createFunnel(totals);
     this.schoolFunnels = this.createSchoolFunnels(records);
@@ -255,6 +480,14 @@ export class AppComponent implements OnInit {
     return `Rp ${new Intl.NumberFormat('id-ID').format(value)}`;
   }
 
+  t(key: string): string {
+    return this.translations[this.selectedLanguage][key] || key;
+  }
+
+  academicYearLabel(year: string): string {
+    return year === 'all' ? this.t('allAcademicYears') : year;
+  }
+
   maxSourceValue(): number {
     return Math.max(...this.sourceSchools.map(item => item.value), 1);
   }
@@ -263,12 +496,21 @@ export class AppComponent implements OnInit {
     this.funnelMode = mode;
   }
 
+  switchLanguage(language: Language): void {
+    this.selectedLanguage = language;
+    this.updateDashboard();
+  }
+
+  currentLanguageLabel(): string {
+    return this.languageOptions.find(option => option.value === this.selectedLanguage)?.badge || 'en';
+  }
+
   riskClass(risk: RiskStatus): string {
-    return risk.toLowerCase().replace(' ', '-');
+    return risk.toLowerCase().replace(/\s+/g, '-');
   }
 
   paymentClass(status: PaymentStatus): string {
-    return status.toLowerCase().replace(' ', '-');
+    return status.toLowerCase().replace(/\s+/g, '-');
   }
 
   readinessClass(item: ReadinessItem): string {
@@ -300,8 +542,29 @@ export class AppComponent implements OnInit {
     return priority.toLowerCase();
   }
 
+  riskLabel(risk: RiskStatus): string {
+    const keys: Record<RiskStatus, string> = {
+      Full: 'full',
+      'Near Full': 'nearFull',
+      Healthy: 'healthy',
+      'Low Demand': 'lowDemand',
+    };
+
+    return this.t(keys[risk]);
+  }
+
+  priorityLabel(priority: QueuePriority): string {
+    const keys: Record<QueuePriority, string> = {
+      High: 'high',
+      Medium: 'medium',
+      Low: 'low',
+    };
+
+    return this.t(keys[priority]);
+  }
+
   private filteredRecords(): DashboardRecord[] {
-    if (this.selectedYear === 'All academic years') {
+    if (this.selectedYear === 'all') {
       return this.baseRecords;
     }
 
@@ -341,17 +604,18 @@ export class AppComponent implements OnInit {
 
   private createFunnel(totals: DashboardRecord): FunnelStep[] {
     const steps = [
-      ['Registered', totals.registered, 0.8],
-      ['Form Complete', totals.formComplete, 1.4],
-      ['Reg. Payment Paid', totals.registrationPaid, 2.1],
-      ['Test Scheduled', totals.testScheduled, 3.7],
-      ['Passed / WL', totals.passedOrWaitingList, 4.9],
-      ['Final Payment', totals.finalPayment, 5.6],
-      ['Completed', totals.completed, 6.2],
+      ['registered', totals.registered, 0.8],
+      ['formComplete', totals.formComplete, 1.4],
+      ['registrationPaid', totals.registrationPaid, 2.1],
+      ['testScheduled', totals.testScheduled, 3.7],
+      ['passedOrWaitingList', totals.passedOrWaitingList, 4.9],
+      ['finalPayment', totals.finalPayment, 5.6],
+      ['completed', totals.completed, 6.2],
     ] as Array<[string, number, number]>;
 
-    return steps.map(([label, value, baseAging]) => ({
-      label,
+    return steps.map(([key, value, baseAging]) => ({
+      key,
+      label: this.t(key),
       value,
       conversion: this.percent(value, totals.registered),
       aging: `${(baseAging * this.agingFactor()).toFixed(1)}d`,
@@ -407,14 +671,14 @@ export class AppComponent implements OnInit {
   }
 
   private createWorkQueue(records: DashboardRecord[]): QueueItem[] {
-    const issueMap = ['Final payment proof waiting verification', 'Registration form missing parent phone', 'Discount approval pending', 'Test result not published', 'Email verification resend needed'];
+    const issueMap = ['finalPaymentProof', 'missingParentPhone', 'discountApproval', 'testResultNotPublished', 'emailVerification'];
     return records.reduce((queueItems: QueueItem[], record: DashboardRecord, index: number) => {
       const count = Math.max(1, Math.min(2, Math.ceil(record.needAction / 25)));
       const recordItems = Array.from({ length: count }).map((_, queueIndex) => ({
         candidate: this.candidateName(index + queueIndex),
         level: record.level,
         campus: record.campus,
-        issue: issueMap[(index + queueIndex) % issueMap.length],
+        issue: this.t(issueMap[(index + queueIndex) % issueMap.length]),
         age: `${Math.max(1, Math.round(record.needAction / 8) + queueIndex)}d ${queueIndex ? '4h' : '8h'}`,
         priority: record.highPriority > 10 ? 'High' : record.needAction > 18 ? 'Medium' : 'Low',
       } as QueueItem));
@@ -427,7 +691,7 @@ export class AppComponent implements OnInit {
     const statuses: PaymentStatus[] = ['Verify', 'Overdue', 'Due Soon', 'Partial'];
     return records.map((record, index) => ({
       candidate: this.candidateName(index + 5),
-      type: index % 2 === 0 ? 'Final Payment' : 'Registration Fee',
+      type: index % 2 === 0 ? this.t('finalPayment') : this.t('registrationFee'),
       amount: Math.max(750000, Math.round(record.outstanding / Math.max(record.needAction, 1))),
       due: `${25 + (index % 6)} Aug`,
       status: statuses[index % statuses.length],
@@ -465,10 +729,10 @@ export class AppComponent implements OnInit {
 
   private createReadiness(totals: DashboardRecord): ReadinessItem[] {
     return [
-      { label: 'Scheduled', value: totals.scheduled, total: totals.registrationPaid },
-      { label: 'Present', value: totals.present, total: totals.scheduled },
-      { label: 'Scores Complete', value: totals.scoresComplete, total: totals.present },
-      { label: 'Results Published', value: totals.resultsPublished, total: totals.scoresComplete },
+      { label: this.t('scheduled'), value: totals.scheduled, total: totals.registrationPaid },
+      { label: this.t('present'), value: totals.present, total: totals.scheduled },
+      { label: this.t('scoresComplete'), value: totals.scoresComplete, total: totals.present },
+      { label: this.t('resultsPublished'), value: totals.resultsPublished, total: totals.scoresComplete },
     ];
   }
 
@@ -480,7 +744,7 @@ export class AppComponent implements OnInit {
 
         return {
           level: record.level,
-          batch: record.batch.replace('Batch ', 'Target Batch '),
+          batch: record.batch.replace('Batch', this.t('targetBatch')),
           campus: record.campus,
           candidates: record.waitingList,
           risk,
@@ -493,10 +757,10 @@ export class AppComponent implements OnInit {
     const average = records.length ? Math.round(records.reduce((sum, record) => sum + record.dataQuality, 0) / records.length) : 0;
 
     return [
-      { label: 'Complete parent contact', value: Math.min(99, average + 3) },
-      { label: 'Required files uploaded', value: Math.max(0, average - 4) },
-      { label: 'Verified candidate email', value: Math.max(0, average - 10) },
-      { label: 'No duplicate indicators', value: Math.min(99, average + 7) },
+      { label: this.t('parentContact'), value: Math.min(99, average + 3) },
+      { label: this.t('filesUploaded'), value: Math.max(0, average - 4) },
+      { label: this.t('candidateEmail'), value: Math.max(0, average - 10) },
+      { label: this.t('duplicateCheck'), value: Math.min(99, average + 7) },
     ];
   }
 
@@ -594,7 +858,7 @@ export class AppComponent implements OnInit {
   }
 
   private conversionLift(): number {
-    if (this.selectedYear === 'All academic years') {
+    if (this.selectedYear === 'all') {
       return 2.8;
     }
 

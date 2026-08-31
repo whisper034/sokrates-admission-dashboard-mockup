@@ -109,6 +109,32 @@
   margin: 0;
 }
 
+.lang-icon-button {
+  position: relative;
+}
+
+.lang-icon-button span {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 999px;
+  bottom: -0.25rem;
+  color: #ffffff;
+  display: flex;
+  font-size: 0.58rem;
+  font-weight: 800;
+  height: 1rem;
+  justify-content: center;
+  min-width: 1rem;
+  padding: 0 0.2rem;
+  position: absolute;
+  right: -0.3rem;
+  text-transform: lowercase;
+}
+
+.language-select {
+  width: 7.8rem;
+}
+
 .tenant-button {
   border-radius: 999px !important;
   font-weight: 700;
@@ -446,10 +472,28 @@ header p {
   text-align: right;
 }
 
-.school-funnel-grid {
-  display: grid;
+.school-funnel-scroll {
+  display: flex;
   gap: 0.85rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 -0.2rem;
+  overflow-x: scroll;
+  padding: 0.1rem 0.2rem 0.8rem;
+  scrollbar-color: #9bb6d4 #edf2fb;
+  scrollbar-width: thin;
+}
+
+.school-funnel-scroll::-webkit-scrollbar {
+  height: 0.65rem;
+}
+
+.school-funnel-scroll::-webkit-scrollbar-track {
+  background: #edf2fb;
+  border-radius: 999px;
+}
+
+.school-funnel-scroll::-webkit-scrollbar-thumb {
+  background: #9bb6d4;
+  border-radius: 999px;
 }
 
 .school-funnel {
@@ -457,6 +501,7 @@ header p {
   border: 1px solid #e0e9f6;
   border-radius: 0.5rem;
   display: grid;
+  flex: 0 0 18rem;
   gap: 0.48rem;
   padding: 0.75rem;
 }
@@ -545,7 +590,8 @@ header p {
 }
 
 .status-pill,
-.quota-top span {
+.quota-top span,
+.legend-item {
   border-radius: 999px;
   display: inline-block;
   font-size: 0.64rem;
@@ -575,6 +621,44 @@ header p {
 .low-demand {
   background: #e8f2ff;
   color: #136ab5;
+}
+
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: -0.2rem 0 0.8rem;
+}
+
+.legend-item::before {
+  border-radius: 50%;
+  content: '';
+  display: inline-block;
+  height: 0.42rem;
+  margin-right: 0.35rem;
+  vertical-align: 0.04rem;
+  width: 0.42rem;
+}
+
+.legend-item.healthy::before,
+.legend-item.paid::before {
+  background: var(--success);
+}
+
+.legend-item.low-demand::before {
+  background: var(--primary);
+}
+
+.legend-item.near-full::before,
+.legend-item.warning::before,
+.legend-item.partial::before {
+  background: var(--warning);
+}
+
+.legend-item.full::before,
+.legend-item.danger::before,
+.legend-item.unpaid::before {
+  background: var(--danger);
 }
 
 .quota-list,
@@ -621,9 +705,12 @@ header p {
   transform-origin: left;
 }
 
-.state-bar.healthy i,
-.state-bar.low-demand i {
+.state-bar.healthy i {
   background: var(--success);
+}
+
+.state-bar.low-demand i {
+  background: var(--primary);
 }
 
 .state-bar.near-full i,
@@ -677,11 +764,16 @@ header p {
   font-size: 0.68rem;
   font-weight: 800;
   justify-content: center;
+  min-width: 0;
 }
 
 .payment-split span:nth-child(1) { background: #00d68f; }
 .payment-split span:nth-child(2) { background: #ffaa00; }
 .payment-split span:nth-child(3) { background: #ff3d71; }
+
+.payment-legend {
+  margin-bottom: 0.7rem;
+}
 
 .queue-list > div {
   border-bottom: 1px solid #edf2fb;
@@ -947,8 +1039,8 @@ header p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .school-funnel-grid {
-    grid-template-columns: 1fr;
+  .school-funnel {
+    flex-basis: 17rem;
   }
 
   .span-7,
