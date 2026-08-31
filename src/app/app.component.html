@@ -12,13 +12,14 @@
       <button nbButton outline status="info" size="small" class="round-button">
         <nb-icon icon="bell-outline"></nb-icon>
       </button>
-      <button nbButton outline status="info" size="small" class="round-button lang-icon-button">
+      <!-- <button nbButton outline status="info" size="small" class="round-button lang-icon-button">
         <nb-icon icon="globe-2-outline"></nb-icon>
         <span>{{ currentLanguageLabel() }}</span>
-      </button>
-      <nb-select class="language-select" size="small" [(selected)]="selectedLanguage" (selectedChange)="switchLanguage($event)">
-        <nb-option *ngFor="let language of languageOptions" [value]="language.value">{{ language.label }}</nb-option>
-      </nb-select>
+      </button> -->
+      <div class="language-toggle" aria-label="Language">
+        <button type="button" [class.active]="selectedLanguage === 'en'" (click)="switchLanguage('en')">EN</button>
+        <button type="button" [class.active]="selectedLanguage === 'id'" (click)="switchLanguage('id')">ID</button>
+      </div>
       <button nbButton outline status="info" size="small" class="tenant-button">Notre Dame</button>
       <div class="avatar">ND</div>
     </div>
@@ -97,6 +98,9 @@
                 <button type="button" [class.active]="funnelMode === 'school'" (click)="setFunnelMode('school')">{{ t('perSchool') }}</button>
               </div>
             </header>
+            <div class="legend-row">
+              <span class="legend-item conversion">{{ t('conversionLegend') }}</span>
+            </div>
             <div class="funnel" *ngIf="funnelMode === 'all'">
               <div class="funnel-row" *ngFor="let step of funnelSteps">
                 <div class="funnel-label">
@@ -119,7 +123,7 @@
                 <small>{{ formatNumber(school.registered) }} {{ t('candidates') }} - {{ formatNumber(school.needAction) }} {{ t('tasks') }}</small>
                 <div class="mini-funnel" *ngFor="let step of school.steps">
                   <span>{{ step.label }}</span>
-                  <div class="state-bar healthy">
+                  <div class="state-bar conversion">
                     <i [style.width.%]="step.conversion"></i>
                   </div>
                   <b>{{ step.conversion }}%</b>
@@ -244,23 +248,16 @@
               <p>{{ t('demandByRegion') }}</p>
             </header>
             <div class="map-card">
-              <svg class="world-map" viewBox="0 0 560 300" role="img" aria-label="Candidate demand map focused on Indonesia">
-                <path d="M33 113L77 92L118 102L152 84L190 91L216 116L176 132L127 125L89 138L50 132Z"></path>
-                <path d="M232 105L275 80L319 87L348 112L331 147L289 151L250 132Z"></path>
-                <path d="M360 132L412 116L466 135L520 152L497 187L431 178L374 165Z"></path>
-                <path d="M343 191L395 198L452 215L498 244L460 263L392 247L344 224Z"></path>
-                <path class="focus-land" d="M360 171L397 164L442 174L482 187L450 202L397 196L359 188Z"></path>
-                <g *ngFor="let region of demandRegions">
-                  <circle class="map-pulse" [attr.cx]="region.x + '%'" [attr.cy]="region.y + '%'" r="11"></circle>
-                  <circle class="map-dot" [ngClass]="region.status" [attr.cx]="region.x + '%'" [attr.cy]="region.y + '%'" r="5"></circle>
-                </g>
-              </svg>
+              <div id="demand-map" class="leaflet-map" aria-label="Candidate demand map focused on Indonesia"></div>
               <div class="region-list">
                 <div *ngFor="let region of demandRegions | slice:0:4">
                   <span>{{ region.label }}</span>
                   <strong>{{ formatNumber(region.value) }}</strong>
                 </div>
               </div>
+            </div>
+            <div class="legend-row">
+              <span class="legend-item volume">{{ t('sourceLegend') }}</span>
             </div>
             <div class="source-list">
               <div *ngFor="let school of sourceSchools">
@@ -299,6 +296,11 @@
               <h2>{{ t('dataQualityTitle') }}</h2>
               <p>{{ t('recordCompleteness') }}</p>
             </header>
+            <div class="legend-row">
+              <span class="legend-item healthy">{{ t('qualityGreen') }}</span>
+              <span class="legend-item warning">{{ t('qualityYellow') }}</span>
+              <span class="legend-item danger">{{ t('qualityRed') }}</span>
+            </div>
             <div class="quality-list">
               <div *ngFor="let item of dataQuality">
                 <span>{{ item.label }}</span>

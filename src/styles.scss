@@ -1,6 +1,7 @@
 @import '~@nebular/theme/styles/theming';
 @import '~@nebular/theme/styles/themes/default';
 @import '~@nebular/theme/styles/globals';
+@import '~leaflet/dist/leaflet.css';
 
 $nb-themes: nb-register-theme((
   font-family-primary: unquote('Open Sans, Arial, sans-serif'),

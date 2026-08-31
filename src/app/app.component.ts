@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
+import * as L from 'leaflet';
 
 type KpiStatus = 'success' | 'warning' | 'danger' | 'info' | 'primary';
 type RiskStatus = 'Full' | 'Near Full' | 'Healthy' | 'Low Demand';
@@ -87,8 +88,8 @@ interface DemandRegion {
   label: string;
   country: string;
   value: number;
-  x: number;
-  y: number;
+  lat: number;
+  lng: number;
   status: 'high' | 'medium' | 'low';
 }
 
@@ -131,7 +132,7 @@ interface DashboardRecord {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   academicYears = ['all', '2026/2027', '2025/2026'];
   selectedYear = 'all';
   funnelMode: 'all' | 'school' = 'all';
@@ -168,6 +169,8 @@ export class AppComponent implements OnInit {
   dataQuality: DataQualityItem[] = [];
   paymentSummary = { expected: 0, received: 0, outstanding: 0 };
   paymentSplit = { paid: 0, partial: 0, unpaid: 0 };
+  private demandMap?: L.Map;
+  private demandLayer?: L.LayerGroup;
 
   private readonly baseRecords: DashboardRecord[] = [
     this.record('2026/2027', 'Simprug', 'Kindergarten', 'K2', 'Batch 1 - Early Bird', 120, 103, 88, 78, 66, 54, 43, 3, 140, 90, 68, 18, 6, 165000000, 42000000, 480000000, 315000000, 48, 37, 78, 69, 59, 52, 18, 91, ['TK Notre Dame Puri', 'Little Stars Preschool', 'Saint Mary Primary']),
@@ -230,6 +233,7 @@ export class AppComponent implements OnInit {
       resultsPublished: 'Results Published',
       allAcademicYears: 'All academic years',
       pipelineHealth: 'Pipeline health',
+      conversionLegend: 'Blue shows conversion from registered candidates',
       allSchools: 'All Schools',
       perSchool: 'Per School',
       candidates: 'candidates',
@@ -281,12 +285,17 @@ export class AppComponent implements OnInit {
       of: 'of',
       sourceTitle: 'Candidate Source and Demand',
       demandByRegion: 'Demand by region',
+      sourceVolume: 'Source volume',
+      sourceLegend: 'Blue shows candidate volume by source school',
       waitingTitle: 'Waiting List and Re-register',
       batchMovement: 'Batch movement',
       level: 'Level',
       risk: 'Risk',
       dataQualityTitle: 'Registration Form Data Quality',
       recordCompleteness: 'Record completeness',
+      qualityGreen: 'Complete >= 88%',
+      qualityYellow: 'Review 78-87%',
+      qualityRed: 'Fix < 78%',
     },
     id: {
       dashboard: 'Dashboard',
@@ -332,6 +341,7 @@ export class AppComponent implements OnInit {
       resultsPublished: 'Hasil Dipublikasikan',
       allAcademicYears: 'Semua tahun akademik',
       pipelineHealth: 'Kesehatan alur',
+      conversionLegend: 'Biru menunjukkan konversi dari kandidat terdaftar',
       allSchools: 'Semua Sekolah',
       perSchool: 'Per Sekolah',
       candidates: 'kandidat',
@@ -383,17 +393,30 @@ export class AppComponent implements OnInit {
       of: 'dari',
       sourceTitle: 'Sumber Kandidat dan Permintaan',
       demandByRegion: 'Permintaan per wilayah',
+      sourceVolume: 'Volume sumber',
+      sourceLegend: 'Biru menunjukkan volume kandidat per sekolah asal',
       waitingTitle: 'Waiting List dan Daftar Ulang',
       batchMovement: 'Pergerakan batch',
       level: 'Jenjang',
       risk: 'Risiko',
       dataQualityTitle: 'Kualitas Data Formulir Registrasi',
       recordCompleteness: 'Kelengkapan data',
+      qualityGreen: 'Lengkap >= 88%',
+      qualityYellow: 'Tinjau 78-87%',
+      qualityRed: 'Perbaiki < 78%',
     },
   };
 
   ngOnInit(): void {
     this.updateDashboard();
+  }
+
+  ngAfterViewInit(): void {
+    this.initializeDemandMap();
+  }
+
+  ngOnDestroy(): void {
+    this.demandMap?.remove();
   }
 
   updateDashboard(): void {
@@ -454,6 +477,7 @@ export class AppComponent implements OnInit {
       outstanding: totals.outstanding,
     };
     this.paymentSplit = this.createPaymentSplit(totals);
+    this.refreshDemandMap();
   }
 
   percent(value: number, total: number): number {
@@ -716,15 +740,79 @@ export class AppComponent implements OnInit {
   private createDemandRegions(totals: DashboardRecord): DemandRegion[] {
     const total = Math.max(totals.registered, 1);
     const regions: DemandRegion[] = [
-      { label: 'Greater Jakarta', country: 'Indonesia', value: Math.round(total * 0.72), x: 69, y: 60, status: 'high' },
-      { label: 'Bandung', country: 'Indonesia', value: Math.round(total * 0.09), x: 67, y: 62, status: 'medium' },
-      { label: 'Surabaya', country: 'Indonesia', value: Math.round(total * 0.07), x: 71, y: 63, status: 'medium' },
-      { label: 'Singapore', country: 'Singapore', value: Math.round(total * 0.05), x: 68, y: 57, status: 'low' },
-      { label: 'Kuala Lumpur', country: 'Malaysia', value: Math.round(total * 0.04), x: 67, y: 56, status: 'low' },
-      { label: 'Overseas', country: 'Global', value: Math.round(total * 0.03), x: 42, y: 45, status: 'low' },
+      { label: 'Greater Jakarta', country: 'Indonesia', value: Math.round(total * 0.72), lat: -6.2088, lng: 106.8456, status: 'high' },
+      { label: 'Bandung', country: 'Indonesia', value: Math.round(total * 0.09), lat: -6.9175, lng: 107.6191, status: 'medium' },
+      { label: 'Surabaya', country: 'Indonesia', value: Math.round(total * 0.07), lat: -7.2575, lng: 112.7521, status: 'medium' },
+      { label: 'Singapore', country: 'Singapore', value: Math.round(total * 0.05), lat: 1.3521, lng: 103.8198, status: 'low' },
+      { label: 'Kuala Lumpur', country: 'Malaysia', value: Math.round(total * 0.04), lat: 3.139, lng: 101.6869, status: 'low' },
+      { label: 'Overseas', country: 'Global', value: Math.round(total * 0.03), lat: 13.7563, lng: 100.5018, status: 'low' },
     ];
 
     return regions.filter(region => region.value > 0);
+  }
+
+  private initializeDemandMap(): void {
+    const mapElement = document.getElementById('demand-map');
+    if (!mapElement || this.demandMap) {
+      return;
+    }
+
+    this.demandMap = L.map(mapElement, {
+      attributionControl: false,
+      zoomControl: false,
+      scrollWheelZoom: false,
+      dragging: true,
+      doubleClickZoom: false,
+    }).setView([-3.9, 110.2], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 12,
+      minZoom: 3,
+    }).addTo(this.demandMap);
+
+    L.control.attribution({ prefix: '' }).addTo(this.demandMap);
+    this.demandLayer = L.layerGroup().addTo(this.demandMap);
+    this.refreshDemandMap();
+
+    setTimeout(() => this.demandMap?.invalidateSize(), 100);
+  }
+
+  private refreshDemandMap(): void {
+    if (!this.demandMap || !this.demandLayer) {
+      return;
+    }
+
+    const demandLayer = this.demandLayer;
+    demandLayer.clearLayers();
+    const maxValue = Math.max(...this.demandRegions.map(region => region.value), 1);
+
+    this.demandRegions.forEach(region => {
+      const marker = L.circleMarker([region.lat, region.lng], {
+        radius: 8 + (region.value / maxValue) * 14,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: this.mapColor(region.status),
+        fillOpacity: 0.82,
+      }).bindTooltip(
+        `<strong>${region.label}</strong><br>${region.country}<br>${this.formatNumber(region.value)} ${this.t('candidates')}`,
+        { direction: 'top', opacity: 0.95 },
+      );
+
+      marker.addTo(demandLayer);
+    });
+  }
+
+  private mapColor(status: DemandRegion['status']): string {
+    if (status === 'high') {
+      return '#ff3d71';
+    }
+
+    if (status === 'medium') {
+      return '#ffaa00';
+    }
+
+    return '#00a974';
   }
 
   private createReadiness(totals: DashboardRecord): ReadinessItem[] {
