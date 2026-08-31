@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "dist/sokrates-admission-dashboard-mockup"
 
+[build.environment]
+  NODE_VERSION = "14.21.3"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
