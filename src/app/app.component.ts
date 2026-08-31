@@ -264,7 +264,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       resultsPublished: 'Results Published',
       allAcademicYears: 'All academic years',
       pipelineHealth: 'Pipeline health',
-      conversionLegend: 'Blue shows conversion from registered candidates',
+      conversionLegend: 'Blue shows candidate share by current status',
+      ofTotal: 'of total',
       allSchools: 'All Schools',
       perSchool: 'Per School',
       candidates: 'candidates',
@@ -391,7 +392,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       resultsPublished: 'Hasil Dipublikasikan',
       allAcademicYears: 'Semua tahun akademik',
       pipelineHealth: 'Kesehatan alur',
-      conversionLegend: 'Biru menunjukkan konversi dari kandidat terdaftar',
+      conversionLegend: 'Biru menunjukkan porsi kandidat berdasarkan status saat ini',
+      ofTotal: 'dari total',
       allSchools: 'Semua Sekolah',
       perSchool: 'Per Sekolah',
       candidates: 'kandidat',
@@ -747,22 +749,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private createFunnel(totals: DashboardRecord): FunnelStep[] {
-    const steps = [
-      ['registered', totals.registered, 0.8],
-      ['formComplete', totals.formComplete, 1.4],
-      ['registrationPaid', totals.registrationPaid, 2.1],
-      ['testScheduled', totals.testScheduled, 3.7],
-      ['passedOrWaitingList', totals.passedOrWaitingList, 4.9],
-      ['finalPayment', totals.finalPayment, 5.6],
-      ['completed', totals.completed, 6.2],
-    ] as Array<[string, number, number]>;
+    const steps = this.createCurrentStatusBuckets(totals);
+    const totalCandidates = steps.reduce((sum, [, value]) => sum + value, 0);
 
-    return steps.map(([key, value, baseAging]) => ({
+    return steps.map(([key, value]) => ({
       key,
       label: this.t(key),
       value,
-      conversion: this.percent(value, totals.registered),
-      aging: `${(baseAging * this.agingFactor()).toFixed(1)}d`,
+      conversion: this.percent(value, totalCandidates),
+      aging: this.formatNumber(value),
     }));
   }
 
@@ -777,16 +772,32 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return Array.from(groups.entries())
       .map(([campus, schoolRecords]) => {
         const totals = this.sumRecords(schoolRecords);
+        const steps = this.createFunnel(totals);
+        const totalCandidates = steps.reduce((sum, step) => sum + step.value, 0);
+        const completed = steps.find(step => step.key === 'completed')?.value || 0;
+
         return {
           campus,
-          registered: totals.registered,
-          completed: totals.completed,
-          conversion: this.percent(totals.completed, totals.registered),
+          registered: totalCandidates,
+          completed,
+          conversion: this.percent(completed, totalCandidates),
           needAction: totals.needAction,
-          steps: this.createFunnel(totals),
+          steps,
         };
       })
       .sort((left, right) => right.registered - left.registered);
+  }
+
+  private createCurrentStatusBuckets(record: DashboardRecord): Array<[string, number]> {
+    return [
+      ['registered', Math.max(0, record.registered - record.formComplete)],
+      ['formComplete', Math.max(0, record.formComplete - record.registrationPaid)],
+      ['registrationPaid', Math.max(0, record.registrationPaid - record.testScheduled)],
+      ['testScheduled', Math.max(0, record.testScheduled - record.passedOrWaitingList)],
+      ['passedOrWaitingList', Math.max(0, record.passedOrWaitingList - record.finalPayment)],
+      ['finalPayment', Math.max(0, record.finalPayment - record.completed)],
+      ['completed', Math.max(0, record.completed)],
+    ];
   }
 
   private createQuota(records: DashboardRecord[]): QuotaItem[] {

@@ -112,9 +112,9 @@
                 </div>
                 <div class="funnel-track">
                   <div class="funnel-fill" [style.width.%]="step.conversion"></div>
-                  <span>{{ step.conversion }}%</span>
+                  <span>{{ step.conversion }}% {{ t('ofTotal') }}</span>
                 </div>
-                <div class="aging">{{ step.aging }}</div>
+                <div class="aging">{{ formatNumber(step.value) }}</div>
               </div>
             </div>
             <div class="school-funnel-scroll" *ngIf="funnelMode === 'school'">
