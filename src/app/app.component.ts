@@ -71,6 +71,24 @@ interface DataQualityItem {
   value: number;
 }
 
+interface SchoolFunnel {
+  campus: string;
+  registered: number;
+  completed: number;
+  conversion: number;
+  needAction: number;
+  steps: FunnelStep[];
+}
+
+interface DemandRegion {
+  label: string;
+  country: string;
+  value: number;
+  x: number;
+  y: number;
+  status: 'high' | 'medium' | 'low';
+}
+
 interface DashboardRecord {
   year: string;
   campus: string;
@@ -111,15 +129,9 @@ interface DashboardRecord {
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
-  academicYears = ['2026/2027', '2025/2026'];
-  campuses = ['All campuses', 'Simprug', 'Serpong', 'Bekasi'];
-  schoolLevels = ['All levels', 'Playgroup', 'Kindergarten', 'Elementary', 'Junior High', 'Senior High'];
-  batches = ['All batches', 'Batch 1 - Early Bird', 'Batch 2 - Regular', 'Batch 3 - Final'];
-
-  selectedYear = '2026/2027';
-  selectedCampus = 'All campuses';
-  selectedLevel = 'All levels';
-  selectedBatch = 'All batches';
+  academicYears = ['All academic years', '2026/2027', '2025/2026'];
+  selectedYear = 'All academic years';
+  funnelMode: 'all' | 'school' = 'all';
 
   navItems = [
     { label: 'Dashboard', icon: 'grid-outline', active: true, hasChildren: true },
@@ -141,6 +153,8 @@ export class AppComponent implements OnInit {
   quotaItems: QuotaItem[] = [];
   paymentQueue: PaymentItem[] = [];
   sourceSchools: SourceSchool[] = [];
+  schoolFunnels: SchoolFunnel[] = [];
+  demandRegions: DemandRegion[] = [];
   testReadiness: ReadinessItem[] = [];
   waitingList: WaitingListItem[] = [];
   dataQuality: DataQualityItem[] = [];
@@ -200,10 +214,12 @@ export class AppComponent implements OnInit {
     ];
 
     this.funnelSteps = this.createFunnel(totals);
+    this.schoolFunnels = this.createSchoolFunnels(records);
     this.quotaItems = this.createQuota(records);
     this.workQueue = this.createWorkQueue(records);
     this.paymentQueue = this.createPaymentQueue(records);
     this.sourceSchools = this.createSourceSchools(records);
+    this.demandRegions = this.createDemandRegions(totals);
     this.testReadiness = this.createReadiness(totals);
     this.waitingList = this.createWaitingList(records);
     this.dataQuality = this.createDataQuality(records);
@@ -243,15 +259,53 @@ export class AppComponent implements OnInit {
     return Math.max(...this.sourceSchools.map(item => item.value), 1);
   }
 
-  private filteredRecords(): DashboardRecord[] {
-    return this.baseRecords.filter(record => {
-      const yearMatches = record.year === this.selectedYear;
-      const campusMatches = this.selectedCampus === 'All campuses' || record.campus === this.selectedCampus;
-      const levelMatches = this.selectedLevel === 'All levels' || record.levelGroup === this.selectedLevel;
-      const batchMatches = this.selectedBatch === 'All batches' || record.batch === this.selectedBatch;
+  setFunnelMode(mode: 'all' | 'school'): void {
+    this.funnelMode = mode;
+  }
 
-      return yearMatches && campusMatches && levelMatches && batchMatches;
-    });
+  riskClass(risk: RiskStatus): string {
+    return risk.toLowerCase().replace(' ', '-');
+  }
+
+  paymentClass(status: PaymentStatus): string {
+    return status.toLowerCase().replace(' ', '-');
+  }
+
+  readinessClass(item: ReadinessItem): string {
+    const value = this.percent(item.value, item.total);
+    if (value < 70) {
+      return 'danger';
+    }
+
+    if (value < 85) {
+      return 'warning';
+    }
+
+    return 'healthy';
+  }
+
+  qualityClass(value: number): string {
+    if (value < 78) {
+      return 'danger';
+    }
+
+    if (value < 88) {
+      return 'warning';
+    }
+
+    return 'healthy';
+  }
+
+  queueClass(priority: QueuePriority): string {
+    return priority.toLowerCase();
+  }
+
+  private filteredRecords(): DashboardRecord[] {
+    if (this.selectedYear === 'All academic years') {
+      return this.baseRecords;
+    }
+
+    return this.baseRecords.filter(record => record.year === this.selectedYear);
   }
 
   private sumRecords(records: DashboardRecord[]): DashboardRecord {
@@ -302,6 +356,29 @@ export class AppComponent implements OnInit {
       conversion: this.percent(value, totals.registered),
       aging: `${(baseAging * this.agingFactor()).toFixed(1)}d`,
     }));
+  }
+
+  private createSchoolFunnels(records: DashboardRecord[]): SchoolFunnel[] {
+    const groups = records.reduce((schoolMap, record) => {
+      const list = schoolMap.get(record.campus) || [];
+      list.push(record);
+      schoolMap.set(record.campus, list);
+      return schoolMap;
+    }, new Map<string, DashboardRecord[]>());
+
+    return Array.from(groups.entries())
+      .map(([campus, schoolRecords]) => {
+        const totals = this.sumRecords(schoolRecords);
+        return {
+          campus,
+          registered: totals.registered,
+          completed: totals.completed,
+          conversion: this.percent(totals.completed, totals.registered),
+          needAction: totals.needAction,
+          steps: this.createFunnel(totals),
+        };
+      })
+      .sort((left, right) => right.registered - left.registered);
   }
 
   private createQuota(records: DashboardRecord[]): QuotaItem[] {
@@ -370,6 +447,20 @@ export class AppComponent implements OnInit {
       .map(([name, value]) => ({ name, value }))
       .sort((left, right) => right.value - left.value)
       .slice(0, 5);
+  }
+
+  private createDemandRegions(totals: DashboardRecord): DemandRegion[] {
+    const total = Math.max(totals.registered, 1);
+    const regions: DemandRegion[] = [
+      { label: 'Greater Jakarta', country: 'Indonesia', value: Math.round(total * 0.72), x: 69, y: 60, status: 'high' },
+      { label: 'Bandung', country: 'Indonesia', value: Math.round(total * 0.09), x: 67, y: 62, status: 'medium' },
+      { label: 'Surabaya', country: 'Indonesia', value: Math.round(total * 0.07), x: 71, y: 63, status: 'medium' },
+      { label: 'Singapore', country: 'Singapore', value: Math.round(total * 0.05), x: 68, y: 57, status: 'low' },
+      { label: 'Kuala Lumpur', country: 'Malaysia', value: Math.round(total * 0.04), x: 67, y: 56, status: 'low' },
+      { label: 'Overseas', country: 'Global', value: Math.round(total * 0.03), x: 42, y: 45, status: 'low' },
+    ];
+
+    return regions.filter(region => region.value > 0);
   }
 
   private createReadiness(totals: DashboardRecord): ReadinessItem[] {
@@ -499,19 +590,19 @@ export class AppComponent implements OnInit {
   }
 
   private previousPeriodFactor(): number {
-    return this.selectedYear === '2026/2027' ? 0.85 : 1.08;
+    return this.selectedYear === '2025/2026' ? 1.08 : 0.9;
   }
 
   private conversionLift(): number {
-    const base = this.selectedYear === '2026/2027' ? 4.2 : -1.6;
-    const campusAdjustment = this.selectedCampus === 'All campuses' ? 0 : 0.7;
-    const batchAdjustment = this.selectedBatch === 'Batch 3 - Final' ? -1.3 : 0;
+    if (this.selectedYear === 'All academic years') {
+      return 2.8;
+    }
 
-    return Number((base + campusAdjustment + batchAdjustment).toFixed(1));
+    return this.selectedYear === '2026/2027' ? 4.2 : -1.6;
   }
 
   private agingFactor(): number {
-    return this.selectedBatch === 'Batch 3 - Final' ? 1.25 : this.selectedCampus === 'All campuses' ? 1 : 0.9;
+    return this.selectedYear === '2025/2026' ? 0.92 : 1;
   }
 
   private formatDelta(current: number, previous: number, suffix: string): string {

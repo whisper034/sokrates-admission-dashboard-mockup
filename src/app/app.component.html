@@ -56,7 +56,7 @@
           <header class="dashboard-heading">
             <div>
               <h1>Admission Dashboard</h1>
-              <p>Operational health, capacity, payment risk, and demand insight for PPDB teams</p>
+              <p>Daily admission overview</p>
             </div>
             <button nbButton status="success" size="small">
               <nb-icon icon="download-outline"></nb-icon>
@@ -68,15 +68,7 @@
             <nb-select placeholder="Academic year" [(selected)]="selectedYear" (selectedChange)="updateDashboard()">
               <nb-option *ngFor="let year of academicYears" [value]="year">{{ year }}</nb-option>
             </nb-select>
-            <nb-select placeholder="School location" [(selected)]="selectedCampus" (selectedChange)="updateDashboard()">
-              <nb-option *ngFor="let campus of campuses" [value]="campus">{{ campus }}</nb-option>
-            </nb-select>
-            <nb-select placeholder="School level" [(selected)]="selectedLevel" (selectedChange)="updateDashboard()">
-              <nb-option *ngFor="let level of schoolLevels" [value]="level">{{ level }}</nb-option>
-            </nb-select>
-            <nb-select placeholder="Batch" [(selected)]="selectedBatch" (selectedChange)="updateDashboard()">
-              <nb-option *ngFor="let batch of batches" [value]="batch">{{ batch }}</nb-option>
-            </nb-select>
+            <span class="filter-note">Showing {{ selectedYear }}</span>
           </div>
 
           <div class="metric-strip">
@@ -91,11 +83,17 @@
 
         <section class="insight-grid">
           <div class="panel span-7">
-            <header>
-              <h2>Admission Funnel Overview</h2>
-              <p>Candidate progression, conversion, and average aging by status</p>
+            <header class="panel-header">
+              <div>
+                <h2>Admission Funnel Overview</h2>
+                <p>Pipeline health</p>
+              </div>
+              <div class="segmented-toggle" aria-label="Funnel view">
+                <button type="button" [class.active]="funnelMode === 'all'" (click)="setFunnelMode('all')">All Schools</button>
+                <button type="button" [class.active]="funnelMode === 'school'" (click)="setFunnelMode('school')">Per School</button>
+              </div>
             </header>
-            <div class="funnel">
+            <div class="funnel" *ngIf="funnelMode === 'all'">
               <div class="funnel-row" *ngFor="let step of funnelSteps">
                 <div class="funnel-label">
                   <strong>{{ step.label }}</strong>
@@ -108,29 +106,45 @@
                 <div class="aging">{{ step.aging }}</div>
               </div>
             </div>
+            <div class="school-funnel-grid" *ngIf="funnelMode === 'school'">
+              <article *ngFor="let school of schoolFunnels" class="school-funnel">
+                <div class="school-funnel-top">
+                  <strong>{{ school.campus }}</strong>
+                  <span>{{ school.conversion }}%</span>
+                </div>
+                <small>{{ formatNumber(school.registered) }} candidates - {{ formatNumber(school.needAction) }} tasks</small>
+                <div class="mini-funnel" *ngFor="let step of school.steps">
+                  <span>{{ step.label }}</span>
+                  <div class="state-bar healthy">
+                    <i [style.width.%]="step.conversion"></i>
+                  </div>
+                  <b>{{ step.conversion }}%</b>
+                </div>
+              </article>
+            </div>
           </div>
 
           <div class="panel span-5">
             <header>
-              <h2>Admin Work Queue</h2>
-              <p>Prioritized actions from payment, forms, discounts, tests, and NIS generation</p>
+              <h2>To-Do List</h2>
+              <p>Open admin tasks</p>
             </header>
-            <table class="compact-table">
+            <table class="modern-table">
               <thead>
                 <tr>
-                  <th>Queue</th>
-                  <th>Issue</th>
-                  <th>SLA</th>
+                  <th>Task</th>
+                  <th>Student</th>
+                  <th>Age</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let item of workQueue">
                   <td>
-                    <strong>{{ item.candidate }}</strong>
-                    <small>{{ item.level }} - {{ item.campus }}</small>
+                    <strong>{{ item.issue }}</strong>
+                    <small>{{ item.priority }} priority</small>
                   </td>
-                  <td>{{ item.issue }}</td>
-                  <td><span class="status-pill" [ngClass]="item.priority.toLowerCase()">{{ item.age }}</span></td>
+                  <td><span>{{ item.candidate }}</span><small>{{ item.level }} - {{ item.campus }}</small></td>
+                  <td><span class="status-pill" [ngClass]="queueClass(item.priority)">{{ item.age }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -141,15 +155,17 @@
           <div class="panel span-4">
             <header>
               <h2>Quota and Capacity Health</h2>
-              <p>Registered candidates versus accepted seat limits by year level</p>
+              <p>Seat usage</p>
             </header>
             <div class="quota-list">
               <div class="quota-item" *ngFor="let item of quotaItems">
                 <div class="quota-top">
                   <strong>{{ item.level }} - {{ item.campus }}</strong>
-                  <span [ngClass]="item.risk.toLowerCase().replace(' ', '-')">{{ item.risk }}</span>
+                  <span [ngClass]="riskClass(item.risk)">{{ item.risk }}</span>
                 </div>
-                <nb-progress-bar [value]="percent(item.registered, item.maxRegister)" size="tiny"></nb-progress-bar>
+                <div class="state-bar" [ngClass]="riskClass(item.risk)">
+                  <i [style.width.%]="percent(item.registered, item.maxRegister)"></i>
+                </div>
                 <small>Registered {{ item.registered }}/{{ item.maxRegister }} - Accepted {{ item.accepted }}/{{ item.maxAccepted }}</small>
               </div>
             </div>
@@ -158,7 +174,7 @@
           <div class="panel span-4">
             <header>
               <h2>Payment and Collection</h2>
-              <p>Expected cash-in, received payment, outstanding amount, and verification risk</p>
+              <p>Collection status</p>
             </header>
             <div class="money-stack">
               <div><span>Expected</span><strong>{{ formatCurrency(paymentSummary.expected) }}</strong></div>
@@ -176,7 +192,7 @@
                   <strong>{{ item.type }}</strong>
                   <small>{{ item.candidate }} - {{ item.due }}</small>
                 </span>
-                <b [ngClass]="item.status.toLowerCase().replace(' ', '-')">{{ formatPaymentAmount(item.amount) }}</b>
+                <b [ngClass]="paymentClass(item.status)">{{ formatPaymentAmount(item.amount) }}</b>
               </div>
             </div>
           </div>
@@ -184,7 +200,7 @@
           <div class="panel span-4">
             <header>
               <h2>Test Readiness</h2>
-              <p>Schedule coverage, attendance, score completion, and result publication</p>
+              <p>Selection progress</p>
             </header>
             <div class="readiness-list">
               <div class="readiness-item" *ngFor="let item of testReadiness">
@@ -193,7 +209,9 @@
                   <small>{{ item.value }} of {{ item.total }} candidates</small>
                 </div>
                 <span>{{ percent(item.value, item.total) }}%</span>
-                <nb-progress-bar [value]="percent(item.value, item.total)" size="tiny"></nb-progress-bar>
+                <div class="state-bar" [ngClass]="readinessClass(item)">
+                  <i [style.width.%]="percent(item.value, item.total)"></i>
+                </div>
               </div>
             </div>
           </div>
@@ -203,8 +221,27 @@
           <div class="panel span-4">
             <header>
               <h2>Candidate Source and Demand</h2>
-              <p>Top origin schools and acquisition signal</p>
+              <p>Demand by region</p>
             </header>
+            <div class="map-card">
+              <svg class="world-map" viewBox="0 0 560 300" role="img" aria-label="Candidate demand map focused on Indonesia">
+                <path d="M33 113L77 92L118 102L152 84L190 91L216 116L176 132L127 125L89 138L50 132Z"></path>
+                <path d="M232 105L275 80L319 87L348 112L331 147L289 151L250 132Z"></path>
+                <path d="M360 132L412 116L466 135L520 152L497 187L431 178L374 165Z"></path>
+                <path d="M343 191L395 198L452 215L498 244L460 263L392 247L344 224Z"></path>
+                <path class="focus-land" d="M360 171L397 164L442 174L482 187L450 202L397 196L359 188Z"></path>
+                <g *ngFor="let region of demandRegions">
+                  <circle class="map-pulse" [attr.cx]="region.x + '%'" [attr.cy]="region.y + '%'" r="11"></circle>
+                  <circle class="map-dot" [ngClass]="region.status" [attr.cx]="region.x + '%'" [attr.cy]="region.y + '%'" r="5"></circle>
+                </g>
+              </svg>
+              <div class="region-list">
+                <div *ngFor="let region of demandRegions | slice:0:4">
+                  <span>{{ region.label }}</span>
+                  <strong>{{ formatNumber(region.value) }}</strong>
+                </div>
+              </div>
+            </div>
             <div class="source-list">
               <div *ngFor="let school of sourceSchools">
                 <span>{{ school.name }}</span>
@@ -217,13 +254,13 @@
           <div class="panel span-4">
             <header>
               <h2>Waiting List and Re-register</h2>
-              <p>Candidate movement risk across target batches</p>
+              <p>Batch movement</p>
             </header>
-            <table class="compact-table">
+            <table class="modern-table">
               <thead>
                 <tr>
                   <th>Level</th>
-                  <th>Target Batch</th>
+                  <th>Batch</th>
                   <th>Risk</th>
                 </tr>
               </thead>
@@ -231,7 +268,7 @@
                 <tr *ngFor="let item of waitingList">
                   <td><strong>{{ item.level }}</strong><small>{{ item.candidates }} candidates</small></td>
                   <td>{{ item.batch }}</td>
-                  <td><span class="status-pill" [ngClass]="item.risk.toLowerCase().replace(' ', '-')">{{ item.risk }}</span></td>
+                  <td><span class="status-pill" [ngClass]="riskClass(item.risk)">{{ item.risk }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -240,13 +277,15 @@
           <div class="panel span-4">
             <header>
               <h2>Registration Form Data Quality</h2>
-              <p>Completeness and reliability indicators for candidate records</p>
+              <p>Record completeness</p>
             </header>
             <div class="quality-list">
               <div *ngFor="let item of dataQuality">
                 <span>{{ item.label }}</span>
                 <strong>{{ item.value }}%</strong>
-                <nb-progress-bar [value]="item.value" size="tiny" status="success"></nb-progress-bar>
+                <div class="state-bar" [ngClass]="qualityClass(item.value)">
+                  <i [style.width.%]="item.value"></i>
+                </div>
               </div>
             </div>
           </div>
