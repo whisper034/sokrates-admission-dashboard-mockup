@@ -93,6 +93,23 @@ interface DemandRegion {
   status: 'high' | 'medium' | 'low';
 }
 
+type ModalKind = 'funnel' | 'queue' | 'quota' | 'payment' | 'source' | 'regions' | 'waiting' | 'quality' | 'readiness';
+
+interface DetailRow {
+  title: string;
+  subtitle: string;
+  meta: string;
+  status?: string;
+  statusClass: string;
+  searchText: string;
+}
+
+interface DetailModal {
+  title: string;
+  description: string;
+  rows: DetailRow[];
+}
+
 interface DashboardRecord {
   year: string;
   campus: string;
@@ -172,6 +189,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private demandMap?: any;
   private demandLayer?: any;
 
+  readonly dashboardLimit = {
+    schoolFunnels: 8,
+    workQueue: 5,
+    quotaItems: 5,
+    paymentQueue: 4,
+    sourceSchools: 5,
+    demandRegions: 4,
+    waitingList: 4,
+  };
+
+  activeModal: DetailModal | null = null;
+  modalSearch = '';
+
   private readonly baseRecords: DashboardRecord[] = [
     this.record('2026/2027', 'Simprug', 'Kindergarten', 'K2', 'Batch 1 - Early Bird', 120, 103, 88, 78, 66, 54, 43, 3, 140, 90, 68, 18, 6, 165000000, 42000000, 480000000, 315000000, 48, 37, 78, 69, 59, 52, 18, 91, ['TK Notre Dame Puri', 'Little Stars Preschool', 'Saint Mary Primary']),
     this.record('2026/2027', 'Serpong', 'Elementary', 'Grade 1', 'Batch 2 - Regular', 214, 184, 158, 137, 112, 92, 76, 9, 230, 150, 124, 36, 14, 342000000, 98000000, 910000000, 568000000, 91, 67, 137, 109, 88, 76, 28, 84, ['Little Stars Preschool', 'Global Nusantara', 'Harapan Bangsa']),
@@ -186,6 +216,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.record('2025/2026', 'Bekasi', 'Senior High', 'Grade 10', 'Batch 3 - Final', 98, 80, 64, 55, 44, 34, 27, 5, 150, 95, 51, 21, 8, 176000000, 58000000, 410000000, 234000000, 43, 29, 55, 44, 37, 31, 19, 81, ['Global Nusantara', 'Harapan Bangsa', 'BINUS School Simprug']),
     this.record('2025/2026', 'Alam Sutera', 'Kindergarten', 'K1', 'Batch 2 - Regular', 108, 91, 74, 61, 48, 39, 31, 4, 150, 100, 58, 16, 4, 124000000, 28000000, 420000000, 296000000, 36, 26, 61, 51, 42, 36, 13, 87, ['Little Stars Preschool', 'TK Notre Dame Puri', 'Harapan Bangsa']),
     this.record('2025/2026', 'Kelapa Gading', 'Elementary', 'Grade 3', 'Batch 1 - Early Bird', 126, 107, 88, 74, 59, 48, 38, 4, 165, 110, 67, 18, 5, 146000000, 31000000, 500000000, 354000000, 42, 31, 74, 62, 50, 43, 15, 85, ['Saint Mary Primary', 'Global Nusantara', 'Little Stars Preschool']),
+    ...this.generateSchoolRecords(),
   ];
 
   private readonly translations: Record<Language, Record<string, string>> = {
@@ -296,6 +327,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       qualityGreen: 'Complete >= 88%',
       qualityYellow: 'Review 78-87%',
       qualityRed: 'Fix < 78%',
+      viewAll: 'View all',
+      viewMore: 'View more',
+      searchItems: 'Search items',
+      close: 'Close',
+      noResults: 'No matching items',
+      hiddenSchools: 'More schools',
+      allSchoolFunnels: 'All school funnels',
+      allTasks: 'All open tasks',
+      allQuota: 'All quota items',
+      allPayments: 'All payment follow-ups',
+      allSources: 'All candidate sources',
+      allRegions: 'All demand regions',
+      allWaitingList: 'All waiting list items',
+      allQuality: 'All data quality checks',
+      allReadiness: 'All readiness steps',
+      totalRegistered: 'Total registered',
+      totalByStep: 'Total by step',
+      previewedItems: 'Showing key items on the dashboard. Search the complete list here.',
+      hiddenItems: 'Items beyond the dashboard preview. Search to find a specific school.',
     },
     id: {
       dashboard: 'Dashboard',
@@ -404,6 +454,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       qualityGreen: 'Lengkap >= 88%',
       qualityYellow: 'Tinjau 78-87%',
       qualityRed: 'Perbaiki < 78%',
+      viewAll: 'Lihat semua',
+      viewMore: 'Lihat lainnya',
+      searchItems: 'Cari item',
+      close: 'Tutup',
+      noResults: 'Tidak ada item yang cocok',
+      hiddenSchools: 'Sekolah lainnya',
+      allSchoolFunnels: 'Semua alur sekolah',
+      allTasks: 'Semua tugas terbuka',
+      allQuota: 'Semua item kuota',
+      allPayments: 'Semua tindak lanjut pembayaran',
+      allSources: 'Semua sumber kandidat',
+      allRegions: 'Semua wilayah permintaan',
+      allWaitingList: 'Semua item waiting list',
+      allQuality: 'Semua pemeriksaan kualitas data',
+      allReadiness: 'Semua langkah kesiapan',
+      totalRegistered: 'Total terdaftar',
+      totalByStep: 'Total per langkah',
+      previewedItems: 'Dashboard menampilkan item utama. Cari daftar lengkapnya di sini.',
+      hiddenItems: 'Item di luar pratinjau dashboard. Cari sekolah tertentu di sini.',
     },
   };
 
@@ -514,6 +583,57 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   maxSourceValue(): number {
     return Math.max(...this.sourceSchools.map(item => item.value), 1);
+  }
+
+  visibleSchoolFunnels(): SchoolFunnel[] {
+    return this.schoolFunnels.slice(0, this.dashboardLimit.schoolFunnels);
+  }
+
+  hiddenSchoolFunnels(): SchoolFunnel[] {
+    return this.schoolFunnels.slice(this.dashboardLimit.schoolFunnels);
+  }
+
+  visibleWorkQueue(): QueueItem[] {
+    return this.workQueue.slice(0, this.dashboardLimit.workQueue);
+  }
+
+  visibleQuotaItems(): QuotaItem[] {
+    return this.quotaItems.slice(0, this.dashboardLimit.quotaItems);
+  }
+
+  visiblePaymentQueue(): PaymentItem[] {
+    return this.paymentQueue.slice(0, this.dashboardLimit.paymentQueue);
+  }
+
+  visibleSourceSchools(): SourceSchool[] {
+    return this.sourceSchools.slice(0, this.dashboardLimit.sourceSchools);
+  }
+
+  visibleWaitingList(): WaitingListItem[] {
+    return this.waitingList.slice(0, this.dashboardLimit.waitingList);
+  }
+
+  filteredModalRows(): DetailRow[] {
+    if (!this.activeModal) {
+      return [];
+    }
+
+    const query = this.modalSearch.trim().toLowerCase();
+    if (!query) {
+      return this.activeModal.rows;
+    }
+
+    return this.activeModal.rows.filter(row => row.searchText.toLowerCase().includes(query));
+  }
+
+  openWidgetModal(kind: ModalKind, hiddenOnly = false): void {
+    this.modalSearch = '';
+    this.activeModal = this.buildModal(kind, hiddenOnly);
+  }
+
+  closeWidgetModal(): void {
+    this.activeModal = null;
+    this.modalSearch = '';
   }
 
   setFunnelMode(mode: 'all' | 'school'): void {
@@ -691,7 +811,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         maxAccepted: record.maxAccepted,
         risk,
       };
-    }).slice(0, 5);
+    });
   }
 
   private createWorkQueue(records: DashboardRecord[]): QueueItem[] {
@@ -708,7 +828,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       } as QueueItem));
 
       return queueItems.concat(recordItems);
-    }, []).slice(0, 5);
+    }, []);
   }
 
   private createPaymentQueue(records: DashboardRecord[]): PaymentItem[] {
@@ -719,7 +839,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       amount: Math.max(750000, Math.round(record.outstanding / Math.max(record.needAction, 1))),
       due: `${25 + (index % 6)} Aug`,
       status: statuses[index % statuses.length],
-    })).slice(0, 4);
+    }));
   }
 
   private createSourceSchools(records: DashboardRecord[]): SourceSchool[] {
@@ -733,8 +853,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return Array.from(sourceMap.entries())
       .map(([name, value]) => ({ name, value }))
-      .sort((left, right) => right.value - left.value)
-      .slice(0, 5);
+      .sort((left, right) => right.value - left.value);
   }
 
   private createDemandRegions(totals: DashboardRecord): DemandRegion[] {
@@ -838,7 +957,205 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
           risk,
         };
       })
-      .slice(0, 4);
+      .sort((left, right) => right.candidates - left.candidates);
+  }
+
+  private buildModal(kind: ModalKind, hiddenOnly: boolean): DetailModal {
+    const description = hiddenOnly ? this.t('hiddenItems') : this.t('previewedItems');
+
+    const modalMap: Record<ModalKind, DetailModal> = {
+      funnel: {
+        title: hiddenOnly ? this.t('hiddenSchools') : this.t('allSchoolFunnels'),
+        description,
+        rows: this.schoolFunnels
+          .slice(hiddenOnly ? this.dashboardLimit.schoolFunnels : 0)
+          .map(school => {
+            const meta = `${this.t('totalRegistered')}: ${this.formatNumber(school.registered)}`;
+            const status = `${this.percent(school.completed, school.registered)}%`;
+            const subtitle = school.steps.map(step => `${step.label}: ${this.formatNumber(step.value)}`).join(' | ');
+            return this.modalRow(school.campus, subtitle, meta, status, 'conversion');
+          }),
+      },
+      queue: {
+        title: this.t('allTasks'),
+        description,
+        rows: this.workQueue.map(item => this.modalRow(
+          item.issue,
+          `${item.candidate} - ${item.level} - ${item.campus}`,
+          item.age,
+          priorityLabelSafe(this.priorityLabel(item.priority)),
+          this.queueClass(item.priority),
+        )),
+      },
+      quota: {
+        title: this.t('allQuota'),
+        description,
+        rows: this.quotaItems.map(item => this.modalRow(
+          `${item.level} - ${item.campus}`,
+          `${this.t('registeredShort')} ${item.registered}/${item.maxRegister} - ${this.t('acceptedShort')} ${item.accepted}/${item.maxAccepted}`,
+          `${this.percent(item.registered, item.maxRegister)}%`,
+          this.riskLabel(item.risk),
+          this.riskClass(item.risk),
+        )),
+      },
+      payment: {
+        title: this.t('allPayments'),
+        description,
+        rows: this.paymentQueue.map(item => this.modalRow(
+          item.type,
+          `${item.candidate} - ${item.due}`,
+          this.formatPaymentAmount(item.amount),
+          item.status,
+          this.paymentClass(item.status),
+        )),
+      },
+      source: {
+        title: this.t('allSources'),
+        description,
+        rows: this.sourceSchools.map(item => this.modalRow(
+          item.name,
+          this.t('sourceVolume'),
+          `${this.formatNumber(item.value)} ${this.t('candidates')}`,
+        )),
+      },
+      regions: {
+        title: this.t('allRegions'),
+        description,
+        rows: this.demandRegions.map(region => this.modalRow(
+          region.label,
+          region.country,
+          `${this.formatNumber(region.value)} ${this.t('candidates')}`,
+          region.status,
+          region.status,
+        )),
+      },
+      waiting: {
+        title: this.t('allWaitingList'),
+        description,
+        rows: this.waitingList.map(item => this.modalRow(
+          `${item.level} - ${item.campus}`,
+          item.batch,
+          `${this.formatNumber(item.candidates)} ${this.t('candidates')}`,
+          this.riskLabel(item.risk),
+          this.riskClass(item.risk),
+        )),
+      },
+      quality: {
+        title: this.t('allQuality'),
+        description,
+        rows: this.dataQuality.map(item => this.modalRow(
+          item.label,
+          this.t('recordCompleteness'),
+          `${item.value}%`,
+          this.qualityClass(item.value),
+          this.qualityClass(item.value),
+        )),
+      },
+      readiness: {
+        title: this.t('allReadiness'),
+        description,
+        rows: this.testReadiness.map(item => this.modalRow(
+          item.label,
+          `${this.formatNumber(item.value)} ${this.t('of')} ${this.formatNumber(item.total)} ${this.t('candidates')}`,
+          `${this.percent(item.value, item.total)}%`,
+          this.readinessClass(item),
+          this.readinessClass(item),
+        )),
+      },
+    };
+
+    return modalMap[kind];
+
+    function priorityLabelSafe(label: string): string {
+      return label;
+    }
+  }
+
+  private modalRow(title: string, subtitle: string, meta: string, status = '', statusClass = ''): DetailRow {
+    return {
+      title,
+      subtitle,
+      meta,
+      status,
+      statusClass,
+      searchText: `${title} ${subtitle} ${meta} ${status}`,
+    };
+  }
+
+  private generateSchoolRecords(): DashboardRecord[] {
+    const campuses = [
+      'Pluit', 'Pondok Indah', 'Kemang', 'Cikarang', 'Bogor', 'Depok', 'Tangerang', 'BSD', 'Gading Serpong', 'Karawaci',
+      'Cirebon', 'Bandung Dago', 'Bandung Kota Baru', 'Surabaya Barat', 'Surabaya Timur', 'Malang', 'Semarang', 'Solo',
+      'Yogyakarta', 'Denpasar', 'Medan', 'Palembang', 'Pekanbaru', 'Batam', 'Balikpapan', 'Makassar', 'Manado', 'Pontianak',
+      'Samarinda', 'Banjarmasin', 'Padang', 'Jambi', 'Lampung', 'Purwokerto', 'Madiun', 'Kediri', 'Sidoarjo', 'Gresik',
+      'Cilegon', 'Serang', 'Tasikmalaya', 'Sukabumi', 'Kupang', 'Mataram', 'Jayapura', 'Ambon', 'Tegal', 'Pekalongan',
+      'Salatiga', 'Magelang', 'Cimahi', 'Bintaro', 'Rawamangun', 'Cempaka Putih', 'Green Lake', 'Pantai Indah Kapuk',
+    ];
+    const levels = [
+      ['Kindergarten', 'K2'],
+      ['Elementary', 'Grade 1'],
+      ['Elementary', 'Grade 4'],
+      ['Junior High', 'Grade 7'],
+      ['Senior High', 'Grade 10'],
+    ];
+    const sources = [
+      'Global Nusantara', 'Harapan Bangsa', 'Little Stars Preschool', 'TK Notre Dame Puri', 'Saint Mary Primary',
+      'Pelita Kasih', 'Bintang Timur', 'Mentari School', 'Cahaya Bangsa', 'Tunas Muda',
+    ];
+
+    return campuses.map((campus, index) => {
+      const year = index % 2 === 0 ? '2026/2027' : '2025/2026';
+      const [levelGroup, level] = levels[index % levels.length];
+      const registered = 72 + ((index * 37) % 260);
+      const formComplete = Math.round(registered * (0.78 + ((index % 5) * 0.025)));
+      const registrationPaid = Math.round(formComplete * (0.76 + ((index % 4) * 0.03)));
+      const testScheduled = Math.round(registrationPaid * (0.72 + ((index % 3) * 0.045)));
+      const passedOrWaitingList = Math.round(testScheduled * (0.72 + ((index % 5) * 0.025)));
+      const finalPayment = Math.round(passedOrWaitingList * (0.68 + ((index % 4) * 0.035)));
+      const completed = Math.round(finalPayment * (0.72 + ((index % 3) * 0.04)));
+      const maxRegister = registered + 35 + ((index * 11) % 95);
+      const maxAccepted = Math.max(completed + 20, Math.round(maxRegister * (0.54 + ((index % 4) * 0.035))));
+      const accepted = Math.min(maxAccepted, Math.round(passedOrWaitingList * (0.58 + ((index % 5) * 0.035))));
+      const needAction = 8 + ((index * 7) % 42);
+      const outstanding = 65000000 + ((index * 19500000) % 360000000);
+      const expectedPayment = 260000000 + registered * 3600000;
+      const receivedPayment = Math.round(expectedPayment * (0.52 + ((index % 5) * 0.055)));
+      const partialPayment = Math.round(expectedPayment * (0.08 + ((index % 3) * 0.025)));
+
+      return this.record(
+        year,
+        campus,
+        levelGroup,
+        level,
+        `Batch ${(index % 3) + 1} - ${['Early Bird', 'Regular', 'Final'][index % 3]}`,
+        registered,
+        formComplete,
+        registrationPaid,
+        testScheduled,
+        passedOrWaitingList,
+        finalPayment,
+        completed,
+        index % 7,
+        maxRegister,
+        maxAccepted,
+        accepted,
+        needAction,
+        index % 4 === 0 ? Math.round(needAction * 0.55) : Math.round(needAction * 0.25),
+        outstanding,
+        Math.round(outstanding * (0.18 + ((index % 4) * 0.04))),
+        expectedPayment,
+        receivedPayment,
+        partialPayment,
+        Math.max(0, expectedPayment - receivedPayment - partialPayment),
+        testScheduled,
+        Math.round(testScheduled * (0.78 + ((index % 4) * 0.03))),
+        Math.round(testScheduled * (0.62 + ((index % 5) * 0.04))),
+        Math.round(testScheduled * (0.55 + ((index % 4) * 0.045))),
+        6 + ((index * 5) % 36),
+        72 + ((index * 3) % 25),
+        [sources[index % sources.length], sources[(index + 3) % sources.length], sources[(index + 6) % sources.length], `${campus} Partner School`],
+      );
+    });
   }
 
   private createDataQuality(records: DashboardRecord[]): DataQualityItem[] {

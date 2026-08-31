@@ -93,9 +93,12 @@
                 <h2>{{ t('admissionFunnelOverview') }}</h2>
                 <p>{{ t('pipelineHealth') }}</p>
               </div>
-              <div class="segmented-toggle" aria-label="Funnel view">
-                <button type="button" [class.active]="funnelMode === 'all'" (click)="setFunnelMode('all')">{{ t('allSchools') }}</button>
-                <button type="button" [class.active]="funnelMode === 'school'" (click)="setFunnelMode('school')">{{ t('perSchool') }}</button>
+              <div class="panel-actions">
+                <button type="button" class="view-button" (click)="openWidgetModal('funnel')">{{ t('viewAll') }}</button>
+                <div class="segmented-toggle" aria-label="Funnel view">
+                  <button type="button" [class.active]="funnelMode === 'all'" (click)="setFunnelMode('all')">{{ t('allSchools') }}</button>
+                  <button type="button" [class.active]="funnelMode === 'school'" (click)="setFunnelMode('school')">{{ t('perSchool') }}</button>
+                </div>
               </div>
             </header>
             <div class="legend-row">
@@ -115,10 +118,10 @@
               </div>
             </div>
             <div class="school-funnel-scroll" *ngIf="funnelMode === 'school'">
-              <article *ngFor="let school of schoolFunnels" class="school-funnel">
+              <article *ngFor="let school of visibleSchoolFunnels()" class="school-funnel">
                 <div class="school-funnel-top">
                   <strong>{{ school.campus }}</strong>
-                  <span>{{ school.conversion }}%</span>
+                  <span>{{ formatNumber(school.registered) }}</span>
                 </div>
                 <small>{{ formatNumber(school.registered) }} {{ t('candidates') }} - {{ formatNumber(school.needAction) }} {{ t('tasks') }}</small>
                 <div class="mini-funnel" *ngFor="let step of school.steps">
@@ -126,16 +129,24 @@
                   <div class="state-bar conversion">
                     <i [style.width.%]="step.conversion"></i>
                   </div>
-                  <b>{{ step.conversion }}%</b>
+                  <b>{{ formatNumber(step.value) }}</b>
                 </div>
               </article>
+              <button *ngIf="hiddenSchoolFunnels().length" type="button" class="view-more-card" (click)="openWidgetModal('funnel', true)">
+                <nb-icon icon="arrow-forward-outline"></nb-icon>
+                <strong>{{ t('viewMore') }}</strong>
+                <span>{{ hiddenSchoolFunnels().length }} {{ t('hiddenSchools') }}</span>
+              </button>
             </div>
           </div>
 
           <div class="panel span-5">
-            <header>
-              <h2>{{ t('toDoList') }}</h2>
-              <p>{{ t('openAdminTasks') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('toDoList') }}</h2>
+                <p>{{ t('openAdminTasks') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('queue')">{{ t('viewAll') }}</button>
             </header>
             <table class="modern-table">
               <thead>
@@ -146,7 +157,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of workQueue">
+                <tr *ngFor="let item of visibleWorkQueue()">
                   <td>
                     <strong>{{ item.issue }}</strong>
                     <small>{{ t('priority') }}: {{ priorityLabel(item.priority) }}</small>
@@ -161,9 +172,12 @@
 
         <section class="insight-grid">
           <div class="panel span-4">
-            <header>
-              <h2>{{ t('quotaTitle') }}</h2>
-              <p>{{ t('seatUsage') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('quotaTitle') }}</h2>
+                <p>{{ t('seatUsage') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('quota')">{{ t('viewAll') }}</button>
             </header>
             <div class="legend-row">
               <span class="legend-item healthy">{{ t('healthy') }}</span>
@@ -172,7 +186,7 @@
               <span class="legend-item full">{{ t('full') }}</span>
             </div>
             <div class="quota-list">
-              <div class="quota-item" *ngFor="let item of quotaItems">
+              <div class="quota-item" *ngFor="let item of visibleQuotaItems()">
                 <div class="quota-top">
                   <strong>{{ item.level }} - {{ item.campus }}</strong>
                   <span [ngClass]="riskClass(item.risk)">{{ riskLabel(item.risk) }}</span>
@@ -186,9 +200,12 @@
           </div>
 
           <div class="panel span-4">
-            <header>
-              <h2>{{ t('paymentTitle') }}</h2>
-              <p>{{ t('collectionStatus') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('paymentTitle') }}</h2>
+                <p>{{ t('collectionStatus') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('payment')">{{ t('viewAll') }}</button>
             </header>
             <div class="money-stack">
               <div><span>{{ t('expected') }}</span><strong>{{ formatCurrency(paymentSummary.expected) }}</strong></div>
@@ -206,7 +223,7 @@
               <span class="legend-item unpaid">{{ t('unpaid') }}</span>
             </div>
             <div class="queue-list">
-              <div *ngFor="let item of paymentQueue">
+              <div *ngFor="let item of visiblePaymentQueue()">
                 <span>
                   <strong>{{ item.type }}</strong>
                   <small>{{ item.candidate }} - {{ item.due }}</small>
@@ -217,9 +234,12 @@
           </div>
 
           <div class="panel span-4">
-            <header>
-              <h2>{{ t('readinessTitle') }}</h2>
-              <p>{{ t('selectionProgress') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('readinessTitle') }}</h2>
+                <p>{{ t('selectionProgress') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('readiness')">{{ t('viewAll') }}</button>
             </header>
             <div class="legend-row">
               <span class="legend-item healthy">{{ t('onTrack') }} >= 85%</span>
@@ -243,14 +263,17 @@
 
         <section class="insight-grid">
           <div class="panel span-4">
-            <header>
-              <h2>{{ t('sourceTitle') }}</h2>
-              <p>{{ t('demandByRegion') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('sourceTitle') }}</h2>
+                <p>{{ t('demandByRegion') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('source')">{{ t('viewAll') }}</button>
             </header>
             <div class="map-card">
               <div id="demand-map" class="leaflet-map" aria-label="Candidate demand map focused on Indonesia"></div>
               <div class="region-list">
-                <div *ngFor="let region of demandRegions | slice:0:4">
+                <div *ngFor="let region of demandRegions | slice:0:dashboardLimit.demandRegions">
                   <span>{{ region.label }}</span>
                   <strong>{{ formatNumber(region.value) }}</strong>
                 </div>
@@ -260,7 +283,7 @@
               <span class="legend-item volume">{{ t('sourceLegend') }}</span>
             </div>
             <div class="source-list">
-              <div *ngFor="let school of sourceSchools">
+              <div *ngFor="let school of visibleSourceSchools()">
                 <span>{{ school.name }}</span>
                 <div><i [style.width.%]="(school.value / maxSourceValue()) * 100"></i></div>
                 <strong>{{ school.value }}</strong>
@@ -269,9 +292,12 @@
           </div>
 
           <div class="panel span-4">
-            <header>
-              <h2>{{ t('waitingTitle') }}</h2>
-              <p>{{ t('batchMovement') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('waitingTitle') }}</h2>
+                <p>{{ t('batchMovement') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('waiting')">{{ t('viewAll') }}</button>
             </header>
             <table class="modern-table">
               <thead>
@@ -282,7 +308,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of waitingList">
+                <tr *ngFor="let item of visibleWaitingList()">
                   <td><strong>{{ item.level }}</strong><small>{{ item.candidates }} {{ t('candidates') }}</small></td>
                   <td>{{ item.batch }}</td>
                   <td><span class="status-pill" [ngClass]="riskClass(item.risk)">{{ riskLabel(item.risk) }}</span></td>
@@ -292,9 +318,12 @@
           </div>
 
           <div class="panel span-4">
-            <header>
-              <h2>{{ t('dataQualityTitle') }}</h2>
-              <p>{{ t('recordCompleteness') }}</p>
+            <header class="panel-header">
+              <div>
+                <h2>{{ t('dataQualityTitle') }}</h2>
+                <p>{{ t('recordCompleteness') }}</p>
+              </div>
+              <button type="button" class="view-button" (click)="openWidgetModal('quality')">{{ t('viewAll') }}</button>
             </header>
             <div class="legend-row">
               <span class="legend-item healthy">{{ t('qualityGreen') }}</span>
@@ -313,6 +342,40 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="activeModal" (click)="closeWidgetModal()">
+      <section class="detail-modal" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h2>{{ activeModal.title }}</h2>
+            <p>{{ activeModal.description }}</p>
+          </div>
+          <button type="button" class="modal-close" [attr.aria-label]="t('close')" (click)="closeWidgetModal()">
+            <nb-icon icon="close-outline"></nb-icon>
+          </button>
+        </header>
+
+        <div class="modal-search">
+          <nb-icon icon="search-outline"></nb-icon>
+          <input nbInput fullWidth [(ngModel)]="modalSearch" [placeholder]="t('searchItems')" />
+        </div>
+
+        <div class="modal-list" *ngIf="filteredModalRows().length; else emptyModal">
+          <article class="modal-row" *ngFor="let row of filteredModalRows()">
+            <div>
+              <strong>{{ row.title }}</strong>
+              <small>{{ row.subtitle }}</small>
+            </div>
+            <span>{{ row.meta }}</span>
+            <b *ngIf="row.status" class="status-pill" [ngClass]="row.statusClass">{{ row.status }}</b>
+          </article>
+        </div>
+
+        <ng-template #emptyModal>
+          <div class="empty-state">{{ t('noResults') }}</div>
+        </ng-template>
+      </section>
     </div>
   </nb-layout-column>
 </nb-layout>
